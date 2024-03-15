@@ -7,15 +7,15 @@ var Transaction = require('./transaction.js');
 var TransactionBuilder = require('./transaction_builder.js');
 var TxDestination = require('./tx_destination.js');
 var script = require('./script.js');
-var evals = require('bitcoin-ops/evals.json');
 var opcodes = require('bitcoin-ops');
 var OptCCParams = require('./optccparams');
 var templates = require('./templates');
 // Hack to force BigNumber to get typeof class instead of BN namespace
 var BNClass = new bn_js_1.BN(0);
-var unpackOutput = function (output, systemId, isInput) {
+var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
     var _a, _b;
     if (isInput === void 0) { isInput = false; }
+    if (allowNonTransferEvals === void 0) { allowNonTransferEvals = false; }
     // Verify change output
     var outputScript = output.script;
     var outputType = templates.classifyOutput(outputScript);
@@ -61,19 +61,19 @@ var unpackOutput = function (output, systemId, isInput) {
             var ccvalues = (_a = {}, _a[systemId] = new bn_js_1.BN(0), _a);
             var ccfees = (_b = {}, _b[systemId] = new bn_js_1.BN(0), _b);
             switch (ccparam.evalCode) {
-                case evals.EVAL_NONE:
+                case verus_typescript_primitives_1.EVALS.EVAL_NONE:
                     if (ccparam.vData.length !== 0) {
                         throw new Error("Unexpected length of vdata array for eval code " + ccparam.evalCode);
                     }
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
                     break;
-                case evals.EVAL_STAKEGUARD:
+                case verus_typescript_primitives_1.EVALS.EVAL_STAKEGUARD:
                     if (!isInput) {
                         throw new Error("Cannot create stakeguard output.");
                     }
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
                     break;
-                case evals.EVAL_RESERVE_TRANSFER:
+                case verus_typescript_primitives_1.EVALS.EVAL_RESERVE_TRANSFER:
                     if (ccparam.vData.length !== 1) {
                         throw new Error("Unexpected length of vdata array for eval code " + ccparam.evalCode);
                     }
@@ -109,7 +109,7 @@ var unpackOutput = function (output, systemId, isInput) {
                         });
                     }
                     break;
-                case evals.EVAL_RESERVE_OUTPUT:
+                case verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT:
                     if (ccparam.vData.length !== 1) {
                         throw new Error("Unexpected length of vdata array for eval code " + ccparam.evalCode);
                     }
@@ -125,6 +125,17 @@ var unpackOutput = function (output, systemId, isInput) {
                         }
                     });
                     data = resOutput;
+                    break;
+                case verus_typescript_primitives_1.EVALS.EVAL_IDENTITY_PRIMARY:
+                    if (allowNonTransferEvals) {
+                        ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
+                        var id = new verus_typescript_primitives_1.Identity();
+                        id.fromBuffer(ccparam.vData[0]);
+                        data = id;
+                    }
+                    else {
+                        throw new Error('EVAL_IDENTITY_PRIMARY not permitted in this context.');
+                    }
                     break;
                 default:
                     throw new Error("Unsupported eval code " + ccparam.evalCode);
@@ -279,7 +290,7 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
     for (var i = 0; i < unfundedTx.outs.length; i++) {
         var output = unfundedTx.outs[i];
         try {
-            var outputInfo = exports.unpackOutput(output, systemId);
+            var outputInfo = exports.unpackOutput(output, systemId, false, true);
             for (var key in outputInfo.values) {
                 if (amountsOut[key] == null) {
                     amountsOut[key] = new bn_js_1.BN(outputInfo.values[key] != null ? outputInfo.values[key] : 0);
@@ -318,7 +329,7 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
                     throw new Error("Invalid param length for change smarttx");
                 var master = outputInfo.master;
                 var param = outputInfo.params[0];
-                if (master.eval !== evals.EVAL_NONE) {
+                if (master.eval !== verus_typescript_primitives_1.EVALS.EVAL_NONE) {
                     throw new Error("Change smartx master must be EVAL_NONE");
                 }
                 if (!((master.m === 0 && master.n === 0 || master.m === 1 && master.n === 1) &&
@@ -326,8 +337,8 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
                     throw new Error("Multisig change unsupported");
                 }
                 switch (param.eval) {
-                    case evals.EVAL_NONE:
-                    case evals.EVAL_RESERVE_OUTPUT:
+                    case verus_typescript_primitives_1.EVALS.EVAL_NONE:
+                    case verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT:
                         break;
                     default:
                         throw new Error("Change only supports EVAL_NONE and EVAL_RESERVE_OUTPUT smarttxs");
@@ -441,7 +452,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             var outParams = void 0;
             if (isReserveTransfer) {
                 var destination = new TxDestination(verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.type.toNumber(), verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destination_bytes);
-                outMaster = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination]);
+                outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
                 var flags = new bn_js_1.BN(1);
                 var version_1 = new bn_js_1.BN(1, 10);
                 var isConversion = params.convertto != null && params.convertto !== params.currency;
@@ -478,26 +489,26 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
                     second_reserve_id: params.convertto,
                     dest_system_id: params.exportto
                 });
-                outParams = new OptCCParams(3, evals.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
+                outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
             }
             else {
                 values.value_map["delete"](systemId);
                 if (values.value_map.size == 0) {
                     var destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes);
                     // Assume token output
-                    outMaster = new OptCCParams(3, evals.EVAL_NONE, 0, 0, []);
-                    outParams = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination], []);
+                    outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 0, 0, []);
+                    outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination], []);
                 }
                 else {
                     var destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes);
                     // Assume token output
-                    outMaster = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination]);
+                    outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
                     var version_2 = new bn_js_1.BN(1, 10);
                     var tokenOutput = new verus_typescript_primitives_1.TokenOutput({
                         values: values,
                         version: version_2
                     });
-                    outParams = new OptCCParams(3, evals.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
+                    outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
                 }
             }
             var outputScript = script.compile([

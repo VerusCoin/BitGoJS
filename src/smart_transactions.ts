@@ -13,7 +13,9 @@ import { CurrencyValueMap,
   TransferDestination, 
   toBase58Check, 
   RESERVE_TRANSFER_DESTINATION, 
-  DEST_PKH
+  DEST_PKH,
+  Identity,
+  EVALS
 } from "verus-typescript-primitives";
 import { BN } from "bn.js";
 import { Network } from "./networkTypes";
@@ -22,7 +24,6 @@ const Transaction = require('./transaction.js');
 const TransactionBuilder = require('./transaction_builder.js');
 const TxDestination = require('./tx_destination.js');
 const script = require('./script.js');
-const evals = require('bitcoin-ops/evals.json');
 const opcodes = require('bitcoin-ops');
 const OptCCParams = require('./optccparams');
 const templates = require('./templates');
@@ -46,7 +47,7 @@ type SmartTxParams = {
   version: number,
   m: number,
   n: number,
-  data?: TokenOutput|ReserveTransfer,
+  data?: TokenOutput|ReserveTransfer|Identity,
   values: { [currency: string]: BigNumber },
   fees: { [currency: string]: BigNumber }
 }
@@ -69,7 +70,7 @@ type OutputParams = {
   bridgeid?: string // if currency is exportto without conversion, destination currency needs to be the bridge
 }
 
-export const unpackOutput = (output: Output, systemId: string, isInput: boolean = false): { 
+export const unpackOutput = (output: Output, systemId: string, isInput: boolean = false, allowNonTransferEvals: boolean = false): { 
   destinations: Array<string>, 
   values: { [currency: string]: BigNumber },
   fees: { [currency: string]: BigNumber },
@@ -123,26 +124,26 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
     }
 
     const processOptCCParam = (ccparam): SmartTxParams => {
-      let data: TokenOutput|ReserveTransfer;
+      let data: TokenOutput|ReserveTransfer|Identity;
       const ccvalues: { [currency: string]: BigNumber } = { [systemId]: new BN(0) };
       const ccfees: { [currency: string]: BigNumber } = { [systemId]: new BN(0) };
 
       switch (ccparam.evalCode) {
-        case evals.EVAL_NONE:
+        case EVALS.EVAL_NONE:
           if (ccparam.vData.length !== 0) {
             throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`)
           }
 
           ccvalues[systemId] = ccvalues[systemId].add(new BN(output.value));
           break;
-        case evals.EVAL_STAKEGUARD:
+        case EVALS.EVAL_STAKEGUARD:
           if (!isInput) {
             throw new Error(`Cannot create stakeguard output.`)
           }
 
           ccvalues[systemId] = ccvalues[systemId].add(new BN(output.value));
           break;
-        case evals.EVAL_RESERVE_TRANSFER:
+        case EVALS.EVAL_RESERVE_TRANSFER:
           if (ccparam.vData.length !== 1) {
             throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`);
           }
@@ -184,7 +185,7 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
           }
 
           break;
-        case evals.EVAL_RESERVE_OUTPUT:
+        case EVALS.EVAL_RESERVE_OUTPUT:
           if (ccparam.vData.length !== 1) {
             throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`)
           }
@@ -200,6 +201,19 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
             }
           })
           data = resOutput;
+          break;
+        case EVALS.EVAL_IDENTITY_PRIMARY:
+          if (allowNonTransferEvals) {
+            ccvalues[systemId] = ccvalues[systemId].add(new BN(output.value));
+
+            const id = new Identity();
+            id.fromBuffer(ccparam.vData[0]);
+
+            data = id;
+          } else {
+            throw new Error('EVAL_IDENTITY_PRIMARY not permitted in this context.')
+          }
+
           break;
         default:
           throw new Error(`Unsupported eval code ${ccparam.evalCode}`)
@@ -384,7 +398,7 @@ export const validateFundedCurrencyTransfer = (
     const output = unfundedTx.outs[i];
 
     try {
-      const outputInfo = unpackOutput(output, systemId);
+      const outputInfo = unpackOutput(output, systemId, false, true);
 
       for (const key in outputInfo.values) {
         if (amountsOut[key] == null) {
@@ -426,7 +440,7 @@ export const validateFundedCurrencyTransfer = (
         const master = outputInfo.master!;
         const param = outputInfo.params[0]!;
 
-        if (master.eval !== evals.EVAL_NONE) {
+        if (master.eval !== EVALS.EVAL_NONE) {
           throw new Error("Change smartx master must be EVAL_NONE")
         }
 
@@ -436,8 +450,8 @@ export const validateFundedCurrencyTransfer = (
         }
 
         switch (param.eval) {
-          case evals.EVAL_NONE:
-          case evals.EVAL_RESERVE_OUTPUT:
+          case EVALS.EVAL_NONE:
+          case EVALS.EVAL_RESERVE_OUTPUT:
             break;
           default:
             throw new Error("Change only supports EVAL_NONE and EVAL_RESERVE_OUTPUT smarttxs")
@@ -567,7 +581,7 @@ export const createUnfundedCurrencyTransfer = (
       
       if (isReserveTransfer) {
         const destination = new TxDestination(RESERVE_TRANSFER_DESTINATION.type.toNumber(), RESERVE_TRANSFER_DESTINATION.destination_bytes)
-        outMaster = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination]);
+        outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination]);
         let flags = new BN(1);
         const version = new BN(1, 10);
         const isConversion = params.convertto != null && params.convertto !== params.currency;
@@ -601,7 +615,7 @@ export const createUnfundedCurrencyTransfer = (
           dest_system_id: params.exportto
         })
   
-        outParams = new OptCCParams(3, evals.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
+        outParams = new OptCCParams(3, EVALS.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
       } else {
         values.value_map.delete(systemId);
 
@@ -609,13 +623,13 @@ export const createUnfundedCurrencyTransfer = (
           const destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes)
   
           // Assume token output
-          outMaster = new OptCCParams(3, evals.EVAL_NONE, 0, 0, []);
-          outParams = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination], []);
+          outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 0, 0, []);
+          outParams = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination], []);
         } else {
           const destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes)
   
           // Assume token output
-          outMaster = new OptCCParams(3, evals.EVAL_NONE, 1, 1, [destination]);
+          outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination]);
           const version = new BN(1, 10);
     
           const tokenOutput = new TokenOutput({
@@ -623,7 +637,7 @@ export const createUnfundedCurrencyTransfer = (
             version
           })
     
-          outParams = new OptCCParams(3, evals.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
+          outParams = new OptCCParams(3, EVALS.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
         }
       }
   

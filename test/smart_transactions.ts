@@ -3,11 +3,12 @@
  */
 /* global describe, it */
 import * as assert from 'assert';
-import { validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput } from '../src/smart_transactions';
+import { validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput, getFundedTxBuilder } from '../src/smart_transactions';
 import networks = require('../src/networks');
-import { DEST_ID, DEST_PKH, FLAG_DEST_AUX, ReserveTransfer, TransferDestination, fromBase58Check } from 'verus-typescript-primitives';
+import { DEST_ID, DEST_PKH, FLAG_DEST_AUX, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
 
-const Transaction = require('../src/transaction');
+const Transaction = require('../src/transaction.js');
+const TransactionBuilder = require('../src/transaction_builder.js');
 
 describe('smarttxs', function () {
   it('validates successful token output to p2pkh', function () {
@@ -1079,5 +1080,64 @@ describe('smarttxs', function () {
     )
 
     assert.equal(unfundedTransfer, "0400008085202f8900010000000000000000521a040300010114402f01e78edb0f5c8251658dde07f0d52b12e972cc34040309010114402f01e78edb0f5c8251658dde07f0d52b12e972190113a542e2075696772ee9861c9b2a4d55c86cf353aed6c1007500000000ac0701000000000000000000000000")
+  })
+
+  it('creates and validates updateidentity tx', function () {
+    const txb = new TransactionBuilder(networks.verustest);
+    const script = "470403000103150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfeacc4d020104030e0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea4cad03000000000000000114c165bce63e47698278f859ee75c35c78eb23e8df01000000a6ef9ea235635e328124ff3429db9f9e91b64e2d085665727573506179000038411ff17100e15b6df8dd72fecbe4fa4964dfea38411ff17100e15b6df8dd72fecbe4fa4964dfea0176041f9ab6ca1d155ce87a7c677e9e0d16c9846e6ee62db670751f8be3ead27cb740aa7595d0be24b741a9a6ef9ea235635e328124ff3429db9f9e91b64e2d000000001b04030f0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea1b0403100101150438411ff17100e15b6df8dd72fecbe4fa4964dfea75"
+
+    txb.setVersion(4);
+    txb.setExpiryHeight(600000);
+    txb.setVersionGroupId(0x892f2085);
+
+    const [master, checkcc, params, drop] = decompile(Buffer.from(script, 'hex')) as [Buffer, number, Buffer, number];
+    const paramsOptCC = OptCCParams.fromChunk(params);
+
+    const identity = new Identity();
+    identity.fromBuffer(paramsOptCC.getParamObject()!);
+
+    const contentmap = new Map();
+    contentmap.set("i5GQFGvDunSHk417JhRZRYxrJRKoS9SH1p", Buffer.from("c45c3e2987f09e8c48d9e2681288bd455a18ebc73ef977750724a7fc51bd3263", 'hex'));
+
+    identity.content_map = contentmap;
+
+    paramsOptCC.vdata[0] = identity.toBuffer();
+
+    const newParamsOut = paramsOptCC.toChunk();
+
+    const newScript = compile([
+      master,
+      checkcc,
+      newParamsOut,
+      drop
+    ])
+
+    txb.addOutput(newScript, 0);
+
+    const txunfunded = txb.buildIncomplete().toHex()
+    const txfunded = "0400008085202f8901daf7ffe9770aa4e2b85ef1add1430d9bce3559b5828211e86e69cdd4ba20fbbe0100000000feffffff021ebca70500000000531a040300010114188246cf1dfc01ef01164a57319eaac36c861d95cc35040309010114188246cf1dfc01ef01164a57319eaac36c861d951a01c0bfd996f3716d9d397db9b1070756b4d8ac9a5abda2ff876b750000000000000000fd8301470403000103150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfeacc4d360104030e0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea4ce103000000000000000114c165bce63e47698278f859ee75c35c78eb23e8df01000000a6ef9ea235635e328124ff3429db9f9e91b64e2d085665727573506179000113a542e2075696772ee9861c9b2a4d55c86cf353c45c3e2987f09e8c48d9e2681288bd455a18ebc73ef977750724a7fc51bd326338411ff17100e15b6df8dd72fecbe4fa4964dfea38411ff17100e15b6df8dd72fecbe4fa4964dfea0176041f9ab6ca1d155ce87a7c677e9e0d16c9846e6ee62db670751f8be3ead27cb740aa7595d0be24b741a9a6ef9ea235635e328124ff3429db9f9e91b64e2d000000001b04030f0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea1b0403100101150438411ff17100e15b6df8dd72fecbe4fa4964dfea7500000000c02709000000000000000000000000";
+    
+    const validation = validateFundedCurrencyTransfer("iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq", txfunded, txunfunded, "RBWnMtxkXztx1J89EEeZ21P1Z74My2SnuM", networks.verustest, [{
+      address: "RR84cAEnJVsUbkCqJuDqRNEz3MwXQsx1ZY",
+      txid: "befb20bad4cd696ee8118282b55935ce9b0d43d1adf15eb8e2a40a77e9fff7da",
+      outputIndex: 1,
+      script: "1a040300010114adc808280b6b5251a5924c9a658798f72197c1bbcc35040309010114adc808280b6b5251a5924c9a658798f72197c1bb1a01c0bfd996f3716d9d397db9b1070756b4d8ac9a5abda2ff876b75",
+      currencyvalues: {},
+      currencynames: {},
+      satoshis: 94888750,
+      height: 455475,
+      isspendable: 1,
+      blocktime: 1710344447
+    }]);
+    
+    const txb2 = getFundedTxBuilder(txfunded, networks.verustest, [Buffer.from("1a040300010114adc808280b6b5251a5924c9a658798f72197c1bbcc35040309010114adc808280b6b5251a5924c9a658798f72197c1bb1a01c0bfd996f3716d9d397db9b1070756b4d8ac9a5abda2ff876b75", 'hex')]);
+    
+    const lastVerusIdOutputHash = Buffer.from("befb20bad4cd696ee8118282b55935ce9b0d43d1adf15eb8e2a40a77e9fff7da", 'hex').reverse();
+    const lastVerusIdOutputScript = "470403000103150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfeacc4d020104030e0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea4cad03000000000000000114c165bce63e47698278f859ee75c35c78eb23e8df01000000a6ef9ea235635e328124ff3429db9f9e91b64e2d085665727573506179000038411ff17100e15b6df8dd72fecbe4fa4964dfea38411ff17100e15b6df8dd72fecbe4fa4964dfea0176041f9ab6ca1d155ce87a7c677e9e0d16c9846e6ee62db670751f8be3ead27cb740aa7595d0be24b741a9a6ef9ea235635e328124ff3429db9f9e91b64e2d000000001b04030f0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea1b0403100101150438411ff17100e15b6df8dd72fecbe4fa4964dfea75";
+
+    txb2.addInput(lastVerusIdOutputHash, 0, 4294967294, Buffer.from(lastVerusIdOutputScript, 'hex'));
+
+    assert.equal(txb2.buildIncomplete().toHex(), "0400008085202f8902daf7ffe9770aa4e2b85ef1add1430d9bce3559b5828211e86e69cdd4ba20fbbe0100000000feffffffdaf7ffe9770aa4e2b85ef1add1430d9bce3559b5828211e86e69cdd4ba20fbbe0000000000feffffff021ebca70500000000531a040300010114188246cf1dfc01ef01164a57319eaac36c861d95cc35040309010114188246cf1dfc01ef01164a57319eaac36c861d951a01c0bfd996f3716d9d397db9b1070756b4d8ac9a5abda2ff876b750000000000000000fd8301470403000103150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfea150438411ff17100e15b6df8dd72fecbe4fa4964dfeacc4d360104030e0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea4ce103000000000000000114c165bce63e47698278f859ee75c35c78eb23e8df01000000a6ef9ea235635e328124ff3429db9f9e91b64e2d085665727573506179000113a542e2075696772ee9861c9b2a4d55c86cf353c45c3e2987f09e8c48d9e2681288bd455a18ebc73ef977750724a7fc51bd326338411ff17100e15b6df8dd72fecbe4fa4964dfea38411ff17100e15b6df8dd72fecbe4fa4964dfea0176041f9ab6ca1d155ce87a7c677e9e0d16c9846e6ee62db670751f8be3ead27cb740aa7595d0be24b741a9a6ef9ea235635e328124ff3429db9f9e91b64e2d000000001b04030f0101150438411ff17100e15b6df8dd72fecbe4fa4964dfea1b0403100101150438411ff17100e15b6df8dd72fecbe4fa4964dfea7500000000c02709000000000000000000000000")
+    assert.equal(validation.valid, true);
   })
 });

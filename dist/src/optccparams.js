@@ -2,6 +2,7 @@ var bscript = require('./script');
 var EVALS = require('bitcoin-ops/evals.json');
 var varuint = require('varuint-bitcoin');
 var TxDestination = require('./tx_destination');
+var bufferutils = require('./bufferutils');
 function varSliceSize(varSlice) {
     var length = varSlice.length;
     return varuint.encodingLength(length) + length;
@@ -97,14 +98,14 @@ var OptCCParams = /** @class */ (function () {
             ((this.version < 3 && this.evalCode < 2) || (this.evalCode <= 26 && this.m <= this.n)));
     };
     OptCCParams.fromChunk = function (chunk) {
-        var prefix = Buffer.alloc(1);
-        prefix.writeUInt8(chunk.length, 0);
+        var writer = new bufferutils.BufferWriter(Buffer.alloc(varuint.encodingLength(chunk.length)), 0);
+        writer.writeVarInt(chunk.length);
         var params = new OptCCParams();
-        params.fromBuffer(Buffer.concat([prefix, chunk]));
+        params.fromBuffer(Buffer.concat([writer.buffer, chunk]));
         return params;
     };
     OptCCParams.prototype.toChunk = function () {
-        return this.toBuffer().slice(1);
+        return this.toBuffer(undefined, undefined, true);
     };
     OptCCParams.prototype.fromBuffer = function (buffer, initialOffset) {
         if (initialOffset === void 0) { initialOffset = 0; }
@@ -183,7 +184,8 @@ var OptCCParams = /** @class */ (function () {
         });
         return varSliceSize(bscript.compile(chunks));
     };
-    OptCCParams.prototype.toBuffer = function (buffer, initialOffset) {
+    OptCCParams.prototype.toBuffer = function (buffer, initialOffset, asChunk) {
+        if (asChunk === void 0) { asChunk = false; }
         var offset = initialOffset || 0;
         function writeSlice(slice) { offset += slice.copy(buffer, offset); }
         function writeVarInt(i) {
@@ -204,8 +206,13 @@ var OptCCParams = /** @class */ (function () {
         });
         var scriptStore = bscript.compile(chunks);
         if (!buffer)
-            buffer = Buffer.allocUnsafe(varSliceSize(scriptStore));
-        writeVarSlice(scriptStore);
+            buffer = Buffer.allocUnsafe(asChunk ? scriptStore.length : varSliceSize(scriptStore));
+        if (asChunk) {
+            writeSlice(scriptStore);
+        }
+        else {
+            writeVarSlice(scriptStore);
+        }
         // avoid slicing unless necessary
         if (initialOffset !== undefined)
             return buffer.slice(initialOffset, offset);

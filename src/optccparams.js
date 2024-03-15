@@ -2,6 +2,7 @@ var bscript = require('./script')
 var EVALS = require('bitcoin-ops/evals.json')
 var varuint = require('varuint-bitcoin')
 const TxDestination = require('./tx_destination')
+const bufferutils = require('./bufferutils')
 
 function varSliceSize (varSlice) {
   var length = varSlice.length
@@ -101,18 +102,18 @@ class OptCCParams {
   }
 
   static fromChunk (chunk) {
-    var prefix = Buffer.alloc(1)
-    prefix.writeUInt8(chunk.length, 0)
+    const writer = new bufferutils.BufferWriter(Buffer.alloc(varuint.encodingLength(chunk.length)), 0);
+    writer.writeVarInt(chunk.length);
 
     const params = new OptCCParams()
 
-    params.fromBuffer(Buffer.concat([prefix, chunk]))
+    params.fromBuffer(Buffer.concat([writer.buffer, chunk]))
 
     return params
   }
 
   toChunk () {
-    return this.toBuffer().slice(1)
+    return this.toBuffer(undefined, undefined, true);
   }
 
   fromBuffer (buffer, initialOffset = 0) {
@@ -202,7 +203,7 @@ class OptCCParams {
     return varSliceSize(bscript.compile(chunks))
   }
 
-  toBuffer (buffer, initialOffset) {
+  toBuffer (buffer, initialOffset, asChunk = false) {
     var offset = initialOffset || 0
     function writeSlice (slice) { offset += slice.copy(buffer, offset) }
     function writeVarInt (i) {
@@ -224,9 +225,14 @@ class OptCCParams {
     })
 
     const scriptStore = bscript.compile(chunks)
-    if (!buffer) buffer = Buffer.allocUnsafe(varSliceSize(scriptStore))
-    writeVarSlice(scriptStore)
+    if (!buffer) buffer = Buffer.allocUnsafe(asChunk ? scriptStore.length : varSliceSize(scriptStore))
 
+    if (asChunk) {
+      writeSlice(scriptStore)
+    } else {
+      writeVarSlice(scriptStore)
+    }
+    
     // avoid slicing unless necessary
     if (initialOffset !== undefined) return buffer.slice(initialOffset, offset)
     // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer
