@@ -233,9 +233,9 @@
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
 "@noble/hashes@^1.2.0":
-  version "1.3.1"
-  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.1.tgz#8831ef002114670c603c458ab8b11328406953a9"
-  integrity sha512-EbqwksQwz9xDRGfDST86whPBgM65E0OH/pCgqW0GBVzO22bNE+NuIbeTb714+IfSjU3aRk47EUvXIb5bTsenKA==
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.4.0.tgz#45814aa329f30e4fe0ba49426f49dfccdd066426"
+  integrity sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==
 
 "@types/bn.js@5.1.1":
   version "5.1.1"
@@ -638,7 +638,7 @@ bs58check@^1.0.6:
 
 "bs58check@https://github.com/bitcoinjs/bs58check":
   version "3.0.1"
-  resolved "https://github.com/bitcoinjs/bs58check#0ddbd3e0813c22a6aef85313916fdab71f479aa9"
+  resolved "https://github.com/bitcoinjs/bs58check#cd8cb4b13b09c0f5f01c3e827f8538390c3388f7"
   dependencies:
     "@noble/hashes" "^1.2.0"
     bs58 "^5.0.0"
@@ -3233,7 +3233,7 @@ varuint-bitcoin@1.0.4:
 
 "verus-typescript-primitives@https://github.com/VerusCoin/verus-typescript-primitives.git":
   version "1.0.0"
-  resolved "https://github.com/VerusCoin/verus-typescript-primitives.git#0150735a5ee7be9dd176f56507bd2b2e339f1cf2"
+  resolved "https://github.com/VerusCoin/verus-typescript-primitives.git#4e52a29e097c94f06b4dd289e8c9cefefd278097"
   dependencies:
     base64url "3.0.1"
     bech32 "2.0.0"
