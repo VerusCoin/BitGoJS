@@ -1,6 +1,6 @@
 "use strict";
 exports.__esModule = true;
-exports.getFundedTxBuilder = exports.createUnfundedCurrencyTransfer = exports.validateFundedCurrencyTransfer = exports.unpackOutput = void 0;
+exports.getFundedTxBuilder = exports.completeFundedIdentityUpdate = exports.createUnfundedIdentityUpdate = exports.createUnfundedCurrencyTransfer = exports.validateFundedCurrencyTransfer = exports.unpackOutput = void 0;
 var verus_typescript_primitives_1 = require("verus-typescript-primitives");
 var bn_js_1 = require("bn.js");
 var Transaction = require('./transaction.js');
@@ -523,6 +523,25 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
     return txb.buildIncomplete().toHex();
 };
 exports.createUnfundedCurrencyTransfer = createUnfundedCurrencyTransfer;
+var createUnfundedIdentityUpdate = function (identity, network, expiryHeight, version, versionGroupId) {
+    if (expiryHeight === void 0) { expiryHeight = 0; }
+    if (version === void 0) { version = 4; }
+    if (versionGroupId === void 0) { versionGroupId = 0x892f2085; }
+    var txb = new TransactionBuilder(network);
+    txb.setVersion(version);
+    txb.setExpiryHeight(expiryHeight);
+    txb.setVersionGroupId(versionGroupId);
+    var outputScript = verus_typescript_primitives_1.IdentityScript.fromIdentity(identity).toBuffer();
+    txb.addOutput(outputScript, 0);
+    return txb.buildIncomplete().toHex();
+};
+exports.createUnfundedIdentityUpdate = createUnfundedIdentityUpdate;
+var completeFundedIdentityUpdate = function (fundedTxHex, network, prevOutScripts, prevIdentityOutput) {
+    var txb = exports.getFundedTxBuilder(fundedTxHex, network, prevOutScripts);
+    txb.addInput(prevIdentityOutput.hash, prevIdentityOutput.index, prevIdentityOutput.sequence, prevIdentityOutput.script);
+    return txb.buildIncomplete().toHex();
+};
+exports.completeFundedIdentityUpdate = completeFundedIdentityUpdate;
 var getFundedTxBuilder = function (fundedTxHex, network, prevOutScripts) {
     var tx = Transaction.fromHex(fundedTxHex, network);
     var inputs = tx.ins;

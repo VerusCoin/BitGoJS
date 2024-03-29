@@ -15,7 +15,8 @@ import { CurrencyValueMap,
   RESERVE_TRANSFER_DESTINATION, 
   DEST_PKH,
   Identity,
-  EVALS
+  EVALS,
+  IdentityScript
 } from "verus-typescript-primitives";
 import { BN } from "bn.js";
 import { Network } from "./networkTypes";
@@ -651,6 +652,38 @@ export const createUnfundedCurrencyTransfer = (
       txb.addOutput(outputScript, nativeValue.toNumber());
     }
   }
+
+  return txb.buildIncomplete().toHex();
+}
+
+export const createUnfundedIdentityUpdate = (
+  identity: Identity,
+  network: Network,
+  expiryHeight: number = 0,
+  version: number = 4,
+  versionGroupId: number = 0x892f2085
+): string => {
+  const txb = new TransactionBuilder(network);
+
+  txb.setVersion(version);
+  txb.setExpiryHeight(expiryHeight);
+  txb.setVersionGroupId(versionGroupId);
+
+  const outputScript = IdentityScript.fromIdentity(identity).toBuffer();
+
+  txb.addOutput(outputScript, 0);
+
+  return txb.buildIncomplete().toHex();
+}
+
+export const completeFundedIdentityUpdate = (
+  fundedTxHex: string,
+  network: Network,
+  prevOutScripts: Array<Buffer>,
+  prevIdentityOutput: { hash: Buffer, index: number, sequence: number, script: Buffer },
+): string => {
+  const txb = getFundedTxBuilder(fundedTxHex, network, prevOutScripts);
+  txb.addInput(prevIdentityOutput.hash, prevIdentityOutput.index, prevIdentityOutput.sequence, prevIdentityOutput.script);
 
   return txb.buildIncomplete().toHex();
 }
