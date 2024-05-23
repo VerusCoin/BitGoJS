@@ -3231,9 +3231,9 @@ varuint-bitcoin@1.0.4:
   resolved "https://registry.yarnpkg.com/varuint-bitcoin/-/varuint-bitcoin-1.0.4.tgz#d812c5dae16e32f60544b6adee1d4be1307d0283"
   integrity sha1-2BLF2uFuMvYFRLat7h1L4TB9AoM=
 
-"verus-typescript-primitives@https://github.com/VerusCoin/verus-typescript-primitives.git":
+"verus-typescript-primitives@git+https://github.com/VerusCoin/verus-typescript-primitives.git":
   version "1.0.0"
-  resolved "https://github.com/VerusCoin/verus-typescript-primitives.git#db0d166172522bb8a11baf36532ec897adad2da8"
+  resolved "git+https://github.com/VerusCoin/verus-typescript-primitives.git#75d08c9763e9439569b509dbf24c3845a693d92d"
   dependencies:
     base64url "3.0.1"
     bech32 "2.0.0"

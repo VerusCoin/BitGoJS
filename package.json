@@ -64,7 +64,7 @@
     "safe-buffer": "5.0.1",
     "typeforce": "1.11.3",
     "varuint-bitcoin": "1.0.4",
-    "verus-typescript-primitives": "https://github.com/VerusCoin/verus-typescript-primitives.git",
+    "verus-typescript-primitives": "git+https://github.com/VerusCoin/verus-typescript-primitives.git",
     "wif": "2.0.1"
   },
   "devDependencies": {
