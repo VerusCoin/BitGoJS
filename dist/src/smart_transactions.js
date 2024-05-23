@@ -443,7 +443,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
         });
         var nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
         var nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-        var isPKH = !isReserveTransfer && params.currency === systemId && params.address.type === verus_typescript_primitives_1.DEST_PKH;
+        var isPKH = !isReserveTransfer && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
         if (isPKH) {
             txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());
         }

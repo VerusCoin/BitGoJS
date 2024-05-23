@@ -572,7 +572,7 @@ export const createUnfundedCurrencyTransfer = (
 
     const nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new BN(params.feesatoshis) : new BN(0);
     const nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-    const isPKH = !isReserveTransfer && params.currency === systemId && params.address.type === DEST_PKH;
+    const isPKH = !isReserveTransfer && params.currency === systemId && params.address.type.eq(DEST_PKH);
 
     if (isPKH) {
       txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());

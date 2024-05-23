@@ -11,6 +11,39 @@ const Transaction = require('../src/transaction.js');
 const TransactionBuilder = require('../src/transaction_builder.js');
 
 describe('smarttxs', function () {
+  it('creates basic PKH tx when able', function () {
+    const addr = TransferDestination.fromJson({ 
+      "aux_dests": [], 
+      "destination_bytes": "aaac5e5078ff347462fa72d16ddb88a7eb50a3b2", 
+      "fees": "0", 
+      "gateway_code": null, 
+      "gateway_id": null, 
+      "type": "2" 
+    })
+
+    const transfer = createUnfundedCurrencyTransfer(
+      "i5w5MuNik5NtLcYmNzcvaoixooEebB6MGV",
+      [{ 
+        "address": addr, 
+        "bridgeid": undefined, 
+        "convertto": undefined, 
+        "currency": "i5w5MuNik5NtLcYmNzcvaoixooEebB6MGV", 
+        "exportto": undefined, 
+        "feecurrency": undefined, 
+        "feesatoshis": undefined, 
+        "importtosource": false, 
+        "satoshis": "239960000", 
+        "via": undefined 
+      }],
+      networks.verus,
+      1000000,
+      4,
+      0x892f2085,
+    )
+
+    assert.equal(transfer, "0400008085202f890001c07f4d0e000000001976a914aaac5e5078ff347462fa72d16ddb88a7eb50a3b288ac0000000040420f000000000000000000000000");
+  });
+  
   it('validates successful token output to p2pkh', function () {
     const unfundedtx = "0400008085202f89000100e1f505000000001976a91487bcb238974658d8bda6a19f9d3f2dd04339b8f788ac00000000f2aa00000000000000000000000000"
     const fundedtx = "0400008085202f89016b0611ccc9f1f3e4572c02f984de1999726625b1c482ace67581def10253e9050100000000feffffff02d066e20b00000000781a040300010114402f01e78edb0f5c8251658dde07f0d52b12e972cc4c59040309010114402f01e78edb0f5c8251658dde07f0d52b12e9723e86fefeff010275939018c507ed9cf366d309d4614b2e43ca3c0090603008db080000848374dd2a47335f0252c8caa066b94de4bf800f804a5d05000000007500e1f505000000001976a91487bcb238974658d8bda6a19f9d3f2dd04339b8f788ac00000000f2aa00000000000000000000000000"
