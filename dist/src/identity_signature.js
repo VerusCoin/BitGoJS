@@ -43,19 +43,30 @@ var IdentitySignature = /** @class */ (function () {
             throw new Error('Unsupported hashtype');
     };
     IdentitySignature.prototype.hashMessage = function (msg) {
-        var rawMsgBuffer = Buffer.from(msg.toLowerCase(), 'utf-8');
+        var rawMsgBuffer = Buffer.from(msg, 'utf-8');
         var msgBufferWriter = new bufferutils.BufferWriter(Buffer.alloc(varuint.encodingLength(rawMsgBuffer.length) + rawMsgBuffer.length));
         msgBufferWriter.writeVarSlice(rawMsgBuffer);
         var _msgHash = sha256(msgBufferWriter.buffer);
         var heightBufferWriter = new bufferutils.BufferWriter(Buffer.alloc(4));
         heightBufferWriter.writeUInt32(this.blockHeight);
-        return createHash('sha256')
-            .update(VERUS_DATA_SIGNATURE_PREFIX)
-            .update(this.chainId)
-            .update(heightBufferWriter.buffer)
-            .update(this.identity)
-            .update(_msgHash)
-            .digest();
+        if (this.version === 1) {
+            return createHash('sha256')
+                .update(VERUS_DATA_SIGNATURE_PREFIX)
+                .update(this.chainId)
+                .update(heightBufferWriter.buffer)
+                .update(this.identity)
+                .update(_msgHash)
+                .digest();
+        }
+        else {
+            return createHash("sha256")
+                .update(this.chainId)
+                .update(heightBufferWriter.buffer)
+                .update(this.identity)
+                .update(VERUS_DATA_SIGNATURE_PREFIX)
+                .update(_msgHash)
+                .digest();
+        }
     };
     IdentitySignature.prototype.signMessageOffline = function (msg, keyPair) {
         return this.signHashOffline(this.hashMessage(msg), keyPair);

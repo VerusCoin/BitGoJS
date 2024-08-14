@@ -49,7 +49,7 @@ class IdentitySignature {
   }
 
   hashMessage (msg) {
-    const rawMsgBuffer = Buffer.from(msg.toLowerCase(), 'utf-8')
+    const rawMsgBuffer = Buffer.from(msg, 'utf-8')
 
     var msgBufferWriter = new bufferutils.BufferWriter(
       Buffer.alloc(
@@ -64,13 +64,23 @@ class IdentitySignature {
     var heightBufferWriter = new bufferutils.BufferWriter(Buffer.alloc(4))
     heightBufferWriter.writeUInt32(this.blockHeight)
 
-    return createHash('sha256')
-      .update(VERUS_DATA_SIGNATURE_PREFIX)
-      .update(this.chainId)
-      .update(heightBufferWriter.buffer)
-      .update(this.identity)
-      .update(_msgHash)
-      .digest()
+    if (this.version === 1) {
+      return createHash('sha256')
+        .update(VERUS_DATA_SIGNATURE_PREFIX)
+        .update(this.chainId)
+        .update(heightBufferWriter.buffer)
+        .update(this.identity)
+        .update(_msgHash)
+        .digest()
+    } else {
+      return createHash("sha256")
+        .update(this.chainId)
+        .update(heightBufferWriter.buffer)
+        .update(this.identity)
+        .update(VERUS_DATA_SIGNATURE_PREFIX)
+        .update(_msgHash)
+        .digest();
+    }
   }
 
   signMessageOffline (msg, keyPair) {

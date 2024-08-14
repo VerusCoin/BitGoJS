@@ -120,7 +120,7 @@ describe('VerusID Signer and Verifier (verustest)', function () {
 
     assert.equal(
       sig.toBuffer().toString('base64'),
-      'AgX3RgAAAUEgy1hI7t/VqBAbBJpM1iyKAo7xlIQ5KJv3sTxzcrbLfr52IAcu/s/nlDleYxa+WrUlJAA2Ek+1diYtJ8a4PAtFbw=='
+      'AgX3RgAAAUEgkH849JQVsiFEJeg33Zxdakm2Ty6aNthhq1aptFliLLtMJDV1AiQDEhiB0ikP4EJn7VzGI3ahPMs5DC2rJLfqaQ=='
     )
     assert.equal(verificationResult, true)
   })
@@ -142,7 +142,7 @@ describe('VerusID Signer and Verifier (verustest)', function () {
 
     assert.equal(
       sig.toBuffer().toString('base64'),
-      'AgX3RgAAAUEgy1hI7t/VqBAbBJpM1iyKAo7xlIQ5KJv3sTxzcrbLfr52IAcu/s/nlDleYxa+WrUlJAA2Ek+1diYtJ8a4PAtFbw=='
+      'AgX3RgAAAUEgkH849JQVsiFEJeg33Zxdakm2Ty6aNthhq1aptFliLLtMJDV1AiQDEhiB0ikP4EJn7VzGI3ahPMs5DC2rJLfqaQ=='
     )
     assert.equal(verificationResult, true)
   })
@@ -174,7 +174,7 @@ describe('VerusID Signer and Verifier (verustest)', function () {
 
     sig.fromBuffer(
       Buffer.from(
-        'AgX3RgAAAUEgy1hI7t/VqBAbBJpM1iyKAo7xlIQ5KJv3sTxzcrbLfr52IAcu/s/nlDleYxa+WrUlJAA2Ek+1diYtJ8a4PAtFbw==',
+        'AgX3RgAAAUEgkH849JQVsiFEJeg33Zxdakm2Ty6aNthhq1aptFliLLtMJDV1AiQDEhiB0ikP4EJn7VzGI3ahPMs5DC2rJLfqaQ==',
         'base64'
       ),
       0,
