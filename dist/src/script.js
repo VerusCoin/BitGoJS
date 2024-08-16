@@ -91,7 +91,8 @@ function decompile(buffer) {
             // attempt to read too much data? empty script
             if (i + d.number > buffer.length)
                 return [];
-            var data = buffer.slice(i, i + d.number);
+            // Buffer.from to support platforms without full buffer implementations
+            var data = Buffer.from(buffer.slice(i, i + d.number));
             i += d.number;
             // decompile minimally
             var op = asMinimalOP(data);
