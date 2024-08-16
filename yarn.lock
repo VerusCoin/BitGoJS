@@ -232,11 +232,6 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@noble/hashes@^1.2.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.4.0.tgz#45814aa329f30e4fe0ba49426f49dfccdd066426"
-  integrity sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==
-
 "@types/bn.js@5.1.1":
   version "5.1.1"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.1.tgz#b51e1b55920a4ca26e9285ff79936bbdec910682"
@@ -420,11 +415,6 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
 
-base-x@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/base-x/-/base-x-1.1.0.tgz#42d3d717474f9ea02207f6d1aa1f426913eeb7ac"
-  integrity sha1-QtPXF0dPnqAiB/bRqh9CaRPut6w=
-
 base-x@^2.0.1:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/base-x/-/base-x-2.0.6.tgz#4582a91ebcec99ee06f4e4032030b0cf1c2941d8"
@@ -433,16 +423,11 @@ base-x@^2.0.1:
     safe-buffer "^5.0.1"
 
 base-x@^3.0.2:
-  version "3.0.9"
-  resolved "https://registry.yarnpkg.com/base-x/-/base-x-3.0.9.tgz#6349aaabb58526332de9f60995e548a53fe21320"
-  integrity sha512-H7JU6iBHTal1gp56aKoaa//YUxEaAOUiydvrV/pILqIHXTtqxSkATOnDA2u+jZ/61sD+L/412+7kzXRtWukhpQ==
+  version "3.0.10"
+  resolved "https://registry.yarnpkg.com/base-x/-/base-x-3.0.10.tgz#62de58653f8762b5d6f8d9fe30fa75f7b2585a75"
+  integrity sha512-7d0s06rR9rYaIWHkpfLIFICM/tkSVdoPC9qYAQRpxn9DdKNWNsKC0uk++akckyLq16Tx2WIinnZ6WRriAt6njQ==
   dependencies:
     safe-buffer "^5.0.1"
-
-base-x@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/base-x/-/base-x-4.0.0.tgz#d0e3b7753450c73f8ad2389b5c018a4af7b2224a"
-  integrity sha512-FuwxlW4H5kh37X/oW59pwTzzTKRzfrrQwhmyspRM7swOEZcHtDZSCt45U6oKgtuFE+WYPblePMVIPR4RZrh/hw==
 
 base64url@3.0.1:
   version "3.0.1"
@@ -590,58 +575,20 @@ bs58@4.0.0:
   dependencies:
     base-x "^2.0.1"
 
-bs58@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/bs58/-/bs58-3.1.0.tgz#d4c26388bf4804cac714141b1945aa47e5eb248e"
-  integrity sha1-1MJjiL9IBMrHFBQbGUWqR+XrJI4=
-  dependencies:
-    base-x "^1.1.0"
-
 bs58@^4.0.0:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/bs58/-/bs58-4.0.1.tgz#be161e76c354f6f788ae4071f63f34e8c4f0a42a"
-  integrity sha1-vhYedsNU9veIrkBx9j806MTwpCo=
+  integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
   dependencies:
     base-x "^3.0.2"
 
-bs58@^5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/bs58/-/bs58-5.0.0.tgz#865575b4d13c09ea2a84622df6c8cbeb54ffc279"
-  integrity sha512-r+ihvQJvahgYT50JD05dyJNKlmmSlMoOGwn1lCcEzanPglg7TxYjioQUYehQ9mAR/+hOSd2jRc/Z2y5UxBymvQ==
-  dependencies:
-    base-x "^4.0.0"
-
-bs58check@2.0.0:
+bs58check@2.0.0, bs58check@<3.0.0, bs58check@^1.0.6, bs58check@^2.1.1:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/bs58check/-/bs58check-2.0.0.tgz#b70fffd80bc72de18a040a547d7e5e08ce1b1e4e"
-  integrity sha1-tw//2AvHLeGKBApUfX5eCM4bHk4=
+  integrity sha512-afttdRHvL1HCgBJqcMtoRXe8xCQ7fbUidoLp1JTRXT4bAvtfDyZx7mb79w82XkcdIFFstG3A4NhKOBdEsLbQbw==
   dependencies:
     bs58 "^4.0.0"
     create-hash "^1.1.0"
-
-bs58check@<3.0.0, bs58check@^2.1.1:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/bs58check/-/bs58check-2.1.2.tgz#53b018291228d82a5aa08e7d796fdafda54aebfc"
-  integrity sha512-0TS1jicxdU09dwJMNZtVAfzPi6Q6QeN0pM1Fkzrjn+XYHvzMKPU3pHVpva+769iNVSfIYWf7LJ6WR+BuuMf8cA==
-  dependencies:
-    bs58 "^4.0.0"
-    create-hash "^1.1.0"
-    safe-buffer "^5.1.2"
-
-bs58check@^1.0.6:
-  version "1.3.4"
-  resolved "https://registry.yarnpkg.com/bs58check/-/bs58check-1.3.4.tgz#c52540073749117714fa042c3047eb8f9151cbf8"
-  integrity sha1-xSVABzdJEXcU+gQsMEfrj5FRy/g=
-  dependencies:
-    bs58 "^3.1.0"
-    create-hash "^1.1.0"
-
-"bs58check@https://github.com/bitcoinjs/bs58check":
-  version "3.0.1"
-  resolved "https://github.com/bitcoinjs/bs58check#cd8cb4b13b09c0f5f01c3e827f8538390c3388f7"
-  dependencies:
-    "@noble/hashes" "^1.2.0"
-    bs58 "^5.0.0"
 
 buffer-from@^1.0.0:
   version "1.1.2"
@@ -3233,12 +3180,12 @@ varuint-bitcoin@1.0.4:
 
 "verus-typescript-primitives@git+https://github.com/VerusCoin/verus-typescript-primitives.git":
   version "1.0.0"
-  resolved "git+https://github.com/VerusCoin/verus-typescript-primitives.git#75d08c9763e9439569b509dbf24c3845a693d92d"
+  resolved "git+https://github.com/VerusCoin/verus-typescript-primitives.git#1962a6e90c5e228c1f826d2dcc234327113affd1"
   dependencies:
     base64url "3.0.1"
     bech32 "2.0.0"
     bn.js "5.2.1"
-    bs58check "https://github.com/bitcoinjs/bs58check"
+    bs58check "2.0.0"
     create-hash "1.2.0"
 
 which-boxed-primitive@^1.0.2:
