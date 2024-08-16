@@ -523,7 +523,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
     return txb.buildIncomplete().toHex();
 };
 exports.createUnfundedCurrencyTransfer = createUnfundedCurrencyTransfer;
-var createUnfundedIdentityUpdate = function (identity, network, expiryHeight, version, versionGroupId) {
+var createUnfundedIdentityUpdate = function (identityHex, network, expiryHeight, version, versionGroupId) {
     if (expiryHeight === void 0) { expiryHeight = 0; }
     if (version === void 0) { version = 4; }
     if (versionGroupId === void 0) { versionGroupId = 0x892f2085; }
@@ -531,6 +531,8 @@ var createUnfundedIdentityUpdate = function (identity, network, expiryHeight, ve
     txb.setVersion(version);
     txb.setExpiryHeight(expiryHeight);
     txb.setVersionGroupId(versionGroupId);
+    var identity = new verus_typescript_primitives_1.Identity();
+    identity.fromBuffer(Buffer.from(identityHex, 'hex'));
     var outputScript = verus_typescript_primitives_1.IdentityScript.fromIdentity(identity).toBuffer();
     txb.addOutput(outputScript, 0);
     return txb.buildIncomplete().toHex();

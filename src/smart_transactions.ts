@@ -657,7 +657,7 @@ export const createUnfundedCurrencyTransfer = (
 }
 
 export const createUnfundedIdentityUpdate = (
-  identity: Identity,
+  identityHex: string,
   network: Network,
   expiryHeight: number = 0,
   version: number = 4,
@@ -668,6 +668,9 @@ export const createUnfundedIdentityUpdate = (
   txb.setVersion(version);
   txb.setExpiryHeight(expiryHeight);
   txb.setVersionGroupId(versionGroupId);
+
+  const identity = new Identity();
+  identity.fromBuffer(Buffer.from(identityHex, 'hex'));
 
   const outputScript = IdentityScript.fromIdentity(identity).toBuffer();
 
