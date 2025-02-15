@@ -15,7 +15,7 @@ var SIGNABLE = [
     btemplates.types.MULTISIG,
     btemplates.types.SMART_TRANSACTION
 ];
-var P2SH = SIGNABLE.concat([btemplates.types.P2WPKH, btemplates.types.P2WSH]);
+var P2SH = SIGNABLE;
 var ECPair = require('./ecpair');
 var ECSignature = require('./ecsignature');
 var Transaction = require('./transaction');
