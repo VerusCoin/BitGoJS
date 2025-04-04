@@ -108,20 +108,22 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
     if (paramsOptCC.length > 1) throw new Error(">1 OptCCParam objects not currently supported for smart transaction params.")
 
     const processDestination = (destination: { destType: number, destinationBytes: Buffer }) => {
-      if (!(destination.destType === 1 && isInput) && 
-            destination.destType !== 2 && 
-            destination.destType !== 4) {
-        throw new Error("Unsupported destination type")
-      }
-
-      const destAddr = toBase58Check(
-        destination.destinationBytes, 
-        destination.destType === 2 ? 60 : 102
-      )
-
-      if (!destinations.includes(destAddr)) {
-        destinations.push(destAddr)
-      }
+      if (destination.destType === 1) {
+        const destStr = destination.destinationBytes.toString();
+  
+        if (!destinations.includes(destStr)) {
+          destinations.push(destStr)
+        }
+      } else if (destination.destType === 2 || destination.destType === 4) {
+        const destAddr = toBase58Check(
+          destination.destinationBytes, 
+          destination.destType === 2 ? 60 : 102
+        )
+  
+        if (!destinations.includes(destAddr)) {
+          destinations.push(destAddr)
+        }
+      } else throw new Error("Unsupported destination type")
     }
 
     const processOptCCParam = (ccparam): SmartTxParams => {
@@ -213,6 +215,14 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
             data = id;
           } else {
             throw new Error('EVAL_IDENTITY_PRIMARY not permitted in this context.')
+          }
+
+          break;
+        case EVALS.EVAL_NOTARY_EVIDENCE:
+          if (!allowNonTransferEvals) {
+            throw new Error('EVAL_NOTARY_EVIDENCE not permitted in this context.')
+          } else {
+            data = ccparam.vData[0]
           }
 
           break;

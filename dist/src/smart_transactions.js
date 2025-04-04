@@ -45,15 +45,20 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
         if (paramsOptCC.length > 1)
             throw new Error(">1 OptCCParam objects not currently supported for smart transaction params.");
         var processDestination_1 = function (destination) {
-            if (!(destination.destType === 1 && isInput) &&
-                destination.destType !== 2 &&
-                destination.destType !== 4) {
+            if (destination.destType === 1) {
+                var destStr = destination.destinationBytes.toString();
+                if (!destinations.includes(destStr)) {
+                    destinations.push(destStr);
+                }
+            }
+            else if (destination.destType === 2 || destination.destType === 4) {
+                var destAddr = verus_typescript_primitives_1.toBase58Check(destination.destinationBytes, destination.destType === 2 ? 60 : 102);
+                if (!destinations.includes(destAddr)) {
+                    destinations.push(destAddr);
+                }
+            }
+            else
                 throw new Error("Unsupported destination type");
-            }
-            var destAddr = verus_typescript_primitives_1.toBase58Check(destination.destinationBytes, destination.destType === 2 ? 60 : 102);
-            if (!destinations.includes(destAddr)) {
-                destinations.push(destAddr);
-            }
         };
         var processOptCCParam = function (ccparam) {
             var _a, _b;
@@ -135,6 +140,14 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                     }
                     else {
                         throw new Error('EVAL_IDENTITY_PRIMARY not permitted in this context.');
+                    }
+                    break;
+                case verus_typescript_primitives_1.EVALS.EVAL_NOTARY_EVIDENCE:
+                    if (!allowNonTransferEvals) {
+                        throw new Error('EVAL_NOTARY_EVIDENCE not permitted in this context.');
+                    }
+                    else {
+                        data = ccparam.vData[0];
                     }
                     break;
                 default:
