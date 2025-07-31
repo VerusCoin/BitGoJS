@@ -71,6 +71,7 @@
     "@types/bn.js": "5.1.1",
     "@types/fs-extra": "9.0.12",
     "@types/mocha": "9.0.0",
+    "@types/node": "24.1.0",
     "axios": "0.21.2",
     "bip39": "2.3.0",
     "bip65": "1.0.1",
@@ -83,8 +84,8 @@
     "proxyquire": "1.4.0",
     "sinon": "1.12.2",
     "standard": "9.0.2",
-    "ts-node": "9.1.1",
-    "typescript": "4.3.5"
+    "ts-node": "10.9.2",
+    "typescript": "5.8.3"
   },
   "resolutions": {
     "ansi-regex": "5.0.1",

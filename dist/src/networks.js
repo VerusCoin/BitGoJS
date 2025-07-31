@@ -24,7 +24,7 @@ function getDefaultBip32Mainnet() {
         // base58 'xpub'
         public: 0x0488b21e,
         // base58 'xprv'
-        private: 0x0488ade4
+        private: 0x0488ade4,
     };
 }
 function getDogeBip32Mainnet() {
@@ -38,7 +38,7 @@ function getDefaultBip32Testnet() {
         // base58 'tpub'
         public: 0x043587cf,
         // base58 'tprv'
-        private: 0x04358394
+        private: 0x04358394,
     };
 }
 var networks = {
@@ -51,7 +51,7 @@ var networks = {
         pubKeyHash: 0x00,
         scriptHash: 0x05,
         wif: 0x80,
-        coin: networkTypes_1.coins.BTC
+        coin: networkTypes_1.coins.BTC,
     },
     testnet: {
         messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -60,7 +60,7 @@ var networks = {
         pubKeyHash: 0x6f,
         scriptHash: 0xc4,
         wif: 0xef,
-        coin: networkTypes_1.coins.BTC
+        coin: networkTypes_1.coins.BTC,
     },
     // https://github.com/Bitcoin-ABC/bitcoin-abc/blob/master/src/validation.cpp
     // https://github.com/Bitcoin-ABC/bitcoin-abc/blob/master/src/chainparams.cpp
@@ -76,8 +76,8 @@ var networks = {
         cashAddr: {
             prefix: 'bitcoincash',
             pubKeyHash: 0x00,
-            scriptHash: 0x08
-        }
+            scriptHash: 0x08,
+        },
     },
     bitcoincashTestnet: {
         messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -89,8 +89,8 @@ var networks = {
         cashAddr: {
             prefix: 'bchtest',
             pubKeyHash: 0x00,
-            scriptHash: 0x08
-        }
+            scriptHash: 0x08,
+        },
     },
     // https://github.com/BTCGPU/BTCGPU/blob/master/src/validation.cpp
     // https://github.com/BTCGPU/BTCGPU/blob/master/src/chainparams.cpp
@@ -103,7 +103,7 @@ var networks = {
         scriptHash: 0x17,
         wif: 0x80,
         forkId: 79,
-        coin: networkTypes_1.coins.BTG
+        coin: networkTypes_1.coins.BTG,
     },
     bitcoingoldTestnet: {
         messagePrefix: '\x18Bitcoin Gold Signed Message:\n',
@@ -113,7 +113,7 @@ var networks = {
         scriptHash: 196,
         wif: 0xef,
         forkId: 79,
-        coin: networkTypes_1.coins.BTG
+        coin: networkTypes_1.coins.BTG,
     },
     // https://github.com/bitcoin-sv/bitcoin-sv/blob/master/src/validation.cpp
     // https://github.com/bitcoin-sv/bitcoin-sv/blob/master/src/chainparams.cpp
@@ -124,7 +124,7 @@ var networks = {
         scriptHash: 0x05,
         wif: 0x80,
         coin: networkTypes_1.coins.BSV,
-        forkId: 0x00
+        forkId: 0x00,
     },
     bitcoinsvTestnet: {
         messagePrefix: '\x18Bitcoin Signed Message:\n',
@@ -132,7 +132,7 @@ var networks = {
         pubKeyHash: 0x6f,
         scriptHash: 0xc4,
         wif: 0xef,
-        coin: networkTypes_1.coins.BSV
+        coin: networkTypes_1.coins.BSV,
     },
     // https://github.com/dashpay/dash/blob/master/src/validation.cpp
     // https://github.com/dashpay/dash/blob/master/src/chainparams.cpp
@@ -142,7 +142,7 @@ var networks = {
         pubKeyHash: 0x4c,
         scriptHash: 0x10,
         wif: 0xcc,
-        coin: networkTypes_1.coins.DASH
+        coin: networkTypes_1.coins.DASH,
     },
     dashTest: {
         messagePrefix: '\x19DarkCoin Signed Message:\n',
@@ -150,9 +150,9 @@ var networks = {
         pubKeyHash: 0x8c,
         scriptHash: 0x13,
         wif: 0xef,
-        coin: networkTypes_1.coins.DASH
+        coin: networkTypes_1.coins.DASH,
     },
-    "default": {
+    default: {
         messagePrefix: '\x15Verus signed data:\n',
         bech32: 'bc',
         bip32: getDefaultBip32Mainnet(),
@@ -217,7 +217,7 @@ var networks = {
         pubKeyHash: 0x30,
         scriptHash: 0x32,
         wif: 0xb0,
-        coin: networkTypes_1.coins.LTC
+        coin: networkTypes_1.coins.LTC,
     },
     litecoinTest: {
         messagePrefix: '\x19Litecoin Signed Message:\n',
@@ -226,7 +226,7 @@ var networks = {
         pubKeyHash: 0x6f,
         scriptHash: 0x3a,
         wif: 0xef,
-        coin: networkTypes_1.coins.LTC
+        coin: networkTypes_1.coins.LTC,
     },
     verus: {
         messagePrefix: '\x15Verus signed data:\n',
@@ -306,6 +306,6 @@ var networks = {
         },
         coin: networkTypes_1.coins.ZEC,
         isZcashCompatible: true
-    }
+    },
 };
 module.exports = networks;

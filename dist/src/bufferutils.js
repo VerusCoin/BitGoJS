@@ -142,5 +142,5 @@ module.exports = {
     writeUInt64LE: writeUInt64LE,
     reverseBuffer: reverseBuffer,
     BufferWriter: BufferWriter,
-    BufferReader: BufferReader
+    BufferReader: BufferReader,
 };

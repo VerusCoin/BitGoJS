@@ -5,20 +5,18 @@
 import * as assert from 'assert';
 import { validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput, completeFundedIdentityUpdate, createUnfundedIdentityUpdate } from '../src/smart_transactions';
 import networks = require('../src/networks');
-import { DEST_ID, DEST_PKH, FLAG_DEST_AUX, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
+import { BigNumber, DEST_ID, DEST_PKH, FLAG_DEST_AUX, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
 
 const Transaction = require('../src/transaction.js');
 const TransactionBuilder = require('../src/transaction_builder.js');
 
 describe('smarttxs', function () {
   it('creates basic PKH tx when able', function () {
-    const addr = TransferDestination.fromJson({ 
-      "aux_dests": [], 
-      "destination_bytes": "aaac5e5078ff347462fa72d16ddb88a7eb50a3b2", 
-      "fees": "0", 
-      "gateway_code": null, 
-      "gateway_id": null, 
-      "type": "2" 
+    const addr = new TransferDestination({
+      type: new BigNumber(2),
+      destination_bytes: Buffer.from("aaac5e5078ff347462fa72d16ddb88a7eb50a3b2", 'hex'),
+      aux_dests: [],
+      fees: new BigNumber(2)
     })
 
     const transfer = createUnfundedCurrencyTransfer(

@@ -1,6 +1,8 @@
 "use strict";
-exports.__esModule = true;
-exports.createOutputScript2of3 = exports.isScriptType2Of3 = exports.scriptTypes2Of3 = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.scriptTypes2Of3 = void 0;
+exports.isScriptType2Of3 = isScriptType2Of3;
+exports.createOutputScript2of3 = createOutputScript2of3;
 /**
  * @prettier
  */
@@ -10,7 +12,6 @@ exports.scriptTypes2Of3 = ['p2sh', 'p2shP2wsh', 'p2wsh'];
 function isScriptType2Of3(t) {
     return exports.scriptTypes2Of3.includes(t);
 }
-exports.isScriptType2Of3 = isScriptType2Of3;
 /**
  * Return scripts for 2-of-3 multisig output
  * @param pubkeys - the key array for multisig
@@ -23,7 +24,7 @@ function createOutputScript2of3(pubkeys, scriptType) {
     }
     pubkeys.forEach(function (key) {
         if (key.length !== 33) {
-            throw new Error("Unexpected key length " + key.length + ". Must use compressed keys.");
+            throw new Error("Unexpected key length ".concat(key.length, ". Must use compressed keys."));
         }
     });
     var script2of3 = script.multisig.output.encode(2, pubkeys);
@@ -42,7 +43,7 @@ function createOutputScript2of3(pubkeys, scriptType) {
             witnessScript = script2of3;
             break;
         default:
-            throw new Error("unknown multisig script type " + scriptType);
+            throw new Error("unknown multisig script type ".concat(scriptType));
     }
     var scriptPubKey;
     if (scriptType === 'p2wsh') {
@@ -54,4 +55,3 @@ function createOutputScript2of3(pubkeys, scriptType) {
     }
     return { redeemScript: redeemScript, witnessScript: witnessScript, scriptPubKey: scriptPubKey };
 }
-exports.createOutputScript2of3 = createOutputScript2of3;

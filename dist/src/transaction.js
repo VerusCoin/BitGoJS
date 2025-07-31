@@ -408,7 +408,7 @@ Transaction.prototype.hashForSignatureByNetwork = function (inIndex, prevoutScri
         case networks.zcash:
         case networks.verus:
         case networks.kmd:
-        case networks["default"]:
+        case networks.default:
             return this.hashForZcashSignature(inIndex, prevoutScript, value, hashType);
         case networks.bitcoincash:
         case networks.bitcoinsv:
@@ -448,7 +448,7 @@ Transaction.prototype.hashForCashSignature = function () {
     }
     if (coins.getMainnet(this.network) !== networks.bitcoincash &&
         coins.getMainnet(this.network) !== networks.bitcoinsv) {
-        throw new Error("called hashForCashSignature on transaction with network " + coins.getNetworkName(this.network));
+        throw new Error("called hashForCashSignature on transaction with network ".concat(coins.getNetworkName(this.network)));
     }
     return this.hashForSignatureByNetwork.apply(this, args);
 };
@@ -460,7 +460,7 @@ Transaction.prototype.hashForGoldSignature = function () {
         args[_i] = arguments[_i];
     }
     if (coins.getMainnet(this.network) !== networks.bitcoingold) {
-        throw new Error("called hashForGoldSignature on transaction with network " + coins.getNetworkName(this.network));
+        throw new Error("called hashForGoldSignature on transaction with network ".concat(coins.getNetworkName(this.network)));
     }
     return this.hashForSignatureByNetwork.apply(this, args);
 };

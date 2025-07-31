@@ -2,7 +2,7 @@
 /**
  * @prettier
  */
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.coins = void 0;
 /**
  * @deprecated
@@ -19,5 +19,5 @@ exports.coins = {
     DEFAULT: 'default',
     KMD: 'kmd',
     DGB: 'dgb',
-    DOGE: 'doge'
+    DOGE: 'doge',
 };

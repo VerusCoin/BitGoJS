@@ -1,6 +1,10 @@
 "use strict";
-exports.__esModule = true;
-exports.createTransactionForNetwork = exports.createTransactionBuilderFromTransaction = exports.createTransactionBuilderForNetwork = exports.createTransactionFromHex = exports.createTransactionFromBuffer = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createTransactionFromBuffer = createTransactionFromBuffer;
+exports.createTransactionFromHex = createTransactionFromHex;
+exports.createTransactionBuilderForNetwork = createTransactionBuilderForNetwork;
+exports.createTransactionBuilderFromTransaction = createTransactionBuilderFromTransaction;
+exports.createTransactionForNetwork = createTransactionForNetwork;
 /**
  * @prettier
  */
@@ -9,7 +13,7 @@ var coins_1 = require("../coins");
 var Transaction = require('../transaction');
 var TransactionBuilder = require('../transaction_builder');
 function createTransactionFromBuffer(buf, network) {
-    switch (coins_1.getMainnet(network)) {
+    switch ((0, coins_1.getMainnet)(network)) {
         case networks.bitcoin:
         case networks.bitcoincash:
         case networks.bitcoinsv:
@@ -22,13 +26,11 @@ function createTransactionFromBuffer(buf, network) {
     /* istanbul ignore next */
     throw new Error("invalid network");
 }
-exports.createTransactionFromBuffer = createTransactionFromBuffer;
 function createTransactionFromHex(hex, network) {
     return createTransactionFromBuffer(Buffer.from(hex, 'hex'), network);
 }
-exports.createTransactionFromHex = createTransactionFromHex;
 function createTransactionBuilderForNetwork(network) {
-    switch (coins_1.getMainnet(network)) {
+    switch ((0, coins_1.getMainnet)(network)) {
         case networks.bitcoin:
         case networks.bitcoincash:
         case networks.bitcoinsv:
@@ -36,7 +38,7 @@ function createTransactionBuilderForNetwork(network) {
         case networks.dash:
         case networks.litecoin: {
             var txb = new TransactionBuilder(network);
-            switch (coins_1.getMainnet(network)) {
+            switch ((0, coins_1.getMainnet)(network)) {
                 case networks.bitcoincash:
                 case networks.bitcoinsv:
                     txb.setVersion(2);
@@ -55,9 +57,8 @@ function createTransactionBuilderForNetwork(network) {
     /* istanbul ignore next */
     throw new Error("invalid network");
 }
-exports.createTransactionBuilderForNetwork = createTransactionBuilderForNetwork;
 function createTransactionBuilderFromTransaction(tx) {
-    switch (coins_1.getMainnet(tx.network)) {
+    switch ((0, coins_1.getMainnet)(tx.network)) {
         case networks.bitcoin:
         case networks.bitcoincash:
         case networks.bitcoinsv:
@@ -70,9 +71,8 @@ function createTransactionBuilderFromTransaction(tx) {
     /* istanbul ignore next */
     throw new Error("invalid network");
 }
-exports.createTransactionBuilderFromTransaction = createTransactionBuilderFromTransaction;
 function createTransactionForNetwork(network) {
-    switch (coins_1.getMainnet(network)) {
+    switch ((0, coins_1.getMainnet)(network)) {
         case networks.bitcoin:
         case networks.bitcoincash:
         case networks.bitcoinsv:
@@ -85,4 +85,3 @@ function createTransactionForNetwork(network) {
     /* istanbul ignore next */
     throw new Error("invalid network");
 }
-exports.createTransactionForNetwork = createTransactionForNetwork;

@@ -1,6 +1,26 @@
 "use strict";
-exports.__esModule = true;
-exports.ZEC = exports.VRSC = exports.LTC = exports.KMD = exports.DOGE = exports.DGB = exports.DEFAULT = exports.DASH = exports.BTG = exports.BTC = exports.BSV = exports.BCH = exports.isValidNetwork = exports.isDigibyte = exports.isDoge = exports.isKomodo = exports.isZcashCompatible = exports.isPBaaS = exports.isVerus = exports.isZcash = exports.isLitecoin = exports.isDash = exports.isBitcoinSV = exports.isBitcoinGold = exports.isBitcoinCash = exports.isBitcoin = exports.getTestnet = exports.isSameCoin = exports.isTestnet = exports.isMainnet = exports.getMainnet = exports.getNetworkName = exports.getNetworkList = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ZEC = exports.VRSC = exports.LTC = exports.KMD = exports.DOGE = exports.DGB = exports.DEFAULT = exports.DASH = exports.BTG = exports.BTC = exports.BSV = exports.BCH = exports.isValidNetwork = void 0;
+exports.getNetworkList = getNetworkList;
+exports.getNetworkName = getNetworkName;
+exports.getMainnet = getMainnet;
+exports.isMainnet = isMainnet;
+exports.isTestnet = isTestnet;
+exports.isSameCoin = isSameCoin;
+exports.getTestnet = getTestnet;
+exports.isBitcoin = isBitcoin;
+exports.isBitcoinCash = isBitcoinCash;
+exports.isBitcoinGold = isBitcoinGold;
+exports.isBitcoinSV = isBitcoinSV;
+exports.isDash = isDash;
+exports.isLitecoin = isLitecoin;
+exports.isZcash = isZcash;
+exports.isVerus = isVerus;
+exports.isPBaaS = isPBaaS;
+exports.isZcashCompatible = isZcashCompatible;
+exports.isKomodo = isKomodo;
+exports.isDoge = isDoge;
+exports.isDigibyte = isDigibyte;
 /**
  * @prettier
  */
@@ -13,7 +33,6 @@ var typeforce = require('typeforce');
 function getNetworkList() {
     return Object.keys(networks).map(function (n) { return networks[n]; });
 }
-exports.getNetworkList = getNetworkList;
 /**
  * @param {Network} network
  * @returns {NetworkName} the name of the network. Returns undefined if network is not a value
@@ -26,7 +45,6 @@ function getNetworkName(network) {
     else
         return undefined;
 }
-exports.getNetworkName = getNetworkName;
 /**
  * @param {Network} network
  * @returns {Object} the mainnet corresponding to a testnet
@@ -63,13 +81,12 @@ function getMainnet(network) {
         case networks.zcash:
         case networks.zcashTest:
             return networks.zcash;
-        case networks["default"]:
-            return networks["default"];
+        case networks.default:
+            return networks.default;
         default:
             return network;
     }
 }
-exports.getMainnet = getMainnet;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is a mainnet
@@ -77,7 +94,6 @@ exports.getMainnet = getMainnet;
 function isMainnet(network) {
     return getMainnet(network) === network;
 }
-exports.isMainnet = isMainnet;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is a testnet
@@ -85,7 +101,6 @@ exports.isMainnet = isMainnet;
 function isTestnet(network) {
     return getMainnet(network) !== network;
 }
-exports.isTestnet = isTestnet;
 /**
  *
  * @param {Network} network
@@ -95,7 +110,6 @@ exports.isTestnet = isTestnet;
 function isSameCoin(network, otherNetwork) {
     return getMainnet(network) === getMainnet(otherNetwork);
 }
-exports.isSameCoin = isSameCoin;
 var mainnets = getNetworkList().filter(isMainnet);
 var testnets = getNetworkList().filter(isTestnet);
 /**
@@ -122,9 +136,8 @@ function getTestnet(network) {
     if (testnets.length === 1) {
         return testnets[0];
     }
-    throw new Error("more than one testnet for " + getNetworkName(network));
+    throw new Error("more than one testnet for ".concat(getNetworkName(network)));
 }
-exports.getTestnet = getTestnet;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network bitcoin or testnet
@@ -132,7 +145,6 @@ exports.getTestnet = getTestnet;
 function isBitcoin(network) {
     return getMainnet(network) === networks.bitcoin;
 }
-exports.isBitcoin = isBitcoin;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is bitcoincash or bitcoincashTestnet
@@ -140,7 +152,6 @@ exports.isBitcoin = isBitcoin;
 function isBitcoinCash(network) {
     return getMainnet(network) === networks.bitcoincash;
 }
-exports.isBitcoinCash = isBitcoinCash;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is bitcoingold
@@ -148,7 +159,6 @@ exports.isBitcoinCash = isBitcoinCash;
 function isBitcoinGold(network) {
     return getMainnet(network) === networks.bitcoingold;
 }
-exports.isBitcoinGold = isBitcoinGold;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is bitcoinsv or bitcoinsvTestnet
@@ -156,7 +166,6 @@ exports.isBitcoinGold = isBitcoinGold;
 function isBitcoinSV(network) {
     return getMainnet(network) === networks.bitcoinsv;
 }
-exports.isBitcoinSV = isBitcoinSV;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is dash or dashTest
@@ -164,7 +173,6 @@ exports.isBitcoinSV = isBitcoinSV;
 function isDash(network) {
     return getMainnet(network) === networks.dash;
 }
-exports.isDash = isDash;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is litecoin or litecoinTest
@@ -172,7 +180,6 @@ exports.isDash = isDash;
 function isLitecoin(network) {
     return getMainnet(network) === networks.litecoin;
 }
-exports.isLitecoin = isLitecoin;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is zcash or zcashTest
@@ -180,7 +187,6 @@ exports.isLitecoin = isLitecoin;
 function isZcash(network) {
     return getMainnet(network) === networks.zcash;
 }
-exports.isZcash = isZcash;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is Verus or VerusTest
@@ -188,7 +194,6 @@ exports.isZcash = isZcash;
 function isVerus(network) {
     return getMainnet(network) === networks.verus;
 }
-exports.isVerus = isVerus;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is PBaaS compatible
@@ -196,7 +201,6 @@ exports.isVerus = isVerus;
 function isPBaaS(network) {
     return network && !!network.isPBaaS;
 }
-exports.isPBaaS = isPBaaS;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is zcash compatible
@@ -204,7 +208,6 @@ exports.isPBaaS = isPBaaS;
 function isZcashCompatible(network) {
     return isZcash(network) || isPBaaS(network) || isKomodo(network);
 }
-exports.isZcashCompatible = isZcashCompatible;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is Komodo
@@ -212,7 +215,6 @@ exports.isZcashCompatible = isZcashCompatible;
 function isKomodo(network) {
     return getMainnet(network) === networks.kmd;
 }
-exports.isKomodo = isKomodo;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is Doge
@@ -220,7 +222,6 @@ exports.isKomodo = isKomodo;
 function isDoge(network) {
     return getMainnet(network) === networks.doge;
 }
-exports.isDoge = isDoge;
 /**
  * @param {Network} network
  * @returns {boolean} true iff network is Digibyte
@@ -228,7 +229,6 @@ exports.isDoge = isDoge;
 function isDigibyte(network) {
     return getMainnet(network) === networks.digibyte;
 }
-exports.isDigibyte = isDigibyte;
 /**
  * @param {Network} network
  * @returns {boolean} returns true iff network is any of the network stated in the argument

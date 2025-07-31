@@ -1,6 +1,8 @@
 "use strict";
-exports.__esModule = true;
-exports.verifySignature = exports.parseSignatureScript = exports.getDefaultSigHash = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDefaultSigHash = getDefaultSigHash;
+exports.parseSignatureScript = parseSignatureScript;
+exports.verifySignature = verifySignature;
 /**
  * @prettier
  */
@@ -24,7 +26,7 @@ var inputTypes = [
     'witnesscommitment',
 ];
 function getDefaultSigHash(network) {
-    switch (coins_1.getMainnet(network)) {
+    switch ((0, coins_1.getMainnet)(network)) {
         case networks.bitcoincash:
         case networks.bitcoinsv:
         case networks.bitcoingold:
@@ -33,7 +35,6 @@ function getDefaultSigHash(network) {
             return Transaction.SIGHASH_ALL;
     }
 }
-exports.getDefaultSigHash = getDefaultSigHash;
 /**
  * Parse a transaction's signature script to obtain public keys, signatures, the sig script,
  * and other properties.
@@ -104,18 +105,17 @@ function parseSignatureScript(input) {
     // keys (+1 as noted above) valid because we use placeholder signatures when parsing a half-signed signature
     // script.
     if (signatures.length !== nSignatures + 1 && signatures.length !== nPubKeys + 1) {
-        throw new Error("expected " + nSignatures + " or " + nPubKeys + " signatures, got " + (signatures.length - 1));
+        throw new Error("expected ".concat(nSignatures, " or ").concat(nPubKeys, " signatures, got ").concat(signatures.length - 1));
     }
     if (publicKeys.length !== nPubKeys) {
-        throw new Error("expected " + nPubKeys + " public keys, got " + publicKeys.length);
+        throw new Error("expected ".concat(nPubKeys, " public keys, got ").concat(publicKeys.length));
     }
     var lastOpCode = decompiledPubScript[len - 1];
     if (lastOpCode !== opcodes.OP_CHECKMULTISIG) {
-        throw new Error("expected opcode #" + opcodes.OP_CHECKMULTISIG + ", got opcode #" + lastOpCode);
+        throw new Error("expected opcode #".concat(opcodes.OP_CHECKMULTISIG, ", got opcode #").concat(lastOpCode));
     }
     return { isSegwitInput: isSegwitInput, inputClassification: inputClassification, signatures: signatures, publicKeys: publicKeys, pubScript: pubScript };
 }
-exports.parseSignatureScript = parseSignatureScript;
 /**
  * Verify the signature on a (half-signed) transaction
  * @param transaction bitcoinjs-lib tx object
@@ -131,7 +131,7 @@ function verifySignature(transaction, inputIndex, amount, verificationSettings) 
     if (typeof verificationSettings.publicKey === 'string') {
         return verifySignature(transaction, inputIndex, amount, {
             signatureIndex: verificationSettings.signatureIndex,
-            publicKey: Buffer.from(verificationSettings.publicKey, 'hex')
+            publicKey: Buffer.from(verificationSettings.publicKey, 'hex'),
         });
     }
     /* istanbul ignore next */
@@ -141,7 +141,7 @@ function verifySignature(transaction, inputIndex, amount, verificationSettings) 
     var input = transaction.ins[inputIndex];
     /* istanbul ignore next */
     if (!input) {
-        throw new Error("no input at index " + inputIndex);
+        throw new Error("no input at index ".concat(inputIndex));
     }
     var _a = parseSignatureScript(input), signatures = _a.signatures, publicKeys = _a.publicKeys, isSegwitInput = _a.isSegwitInput, inputClassification = _a.inputClassification, pubScript = _a.pubScript;
     if (![script.types.P2WSH, script.types.P2SH, script.types.P2PKH].includes(inputClassification)) {
@@ -219,4 +219,3 @@ function verifySignature(transaction, inputIndex, amount, verificationSettings) 
     }
     return areAllSignaturesValid;
 }
-exports.verifySignature = verifySignature;

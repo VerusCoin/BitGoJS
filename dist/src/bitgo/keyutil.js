@@ -1,6 +1,7 @@
 "use strict";
-exports.__esModule = true;
-exports.privateKeyBufferFromECPair = exports.privateKeyBufferToECPair = void 0;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.privateKeyBufferToECPair = privateKeyBufferToECPair;
+exports.privateKeyBufferFromECPair = privateKeyBufferFromECPair;
 /**
  * @prettier
  */
@@ -19,7 +20,6 @@ function privateKeyBufferToECPair(buffer, network) {
     var d = BigInteger.fromBuffer(buffer);
     return new ECPair(d, null, { network: network });
 }
-exports.privateKeyBufferToECPair = privateKeyBufferToECPair;
 /**
  * Get the private key as a 32 bytes buffer. If it is smaller than 32 bytes, pad it with zeros
  * @param {ECPair} ecPair
@@ -33,4 +33,3 @@ function privateKeyBufferFromECPair(ecPair) {
         throw new Error('Missing private key');
     return ecPair.d.toBuffer(32);
 }
-exports.privateKeyBufferFromECPair = privateKeyBufferFromECPair;
