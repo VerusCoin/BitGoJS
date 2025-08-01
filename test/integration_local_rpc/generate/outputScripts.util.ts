@@ -1,13 +1,17 @@
 /**
  * @prettier
  */
-import * as bip32 from 'bip32';
+import BIP32Factory from 'bip32';
+import { BIP32Interface } from 'bip32';
 import * as crypto from 'crypto';
 import { Network } from '../../../src/networkTypes';
 import { Transaction, Triple } from './types';
 import { createOutputScript2of3, ScriptType2Of3, scriptTypes2Of3 } from '../../../src/bitgo/outputScripts';
 import { getMainnet, isBitcoin, isBitcoinGold, isLitecoin, isVerus, isZcashCompatible } from '../../../src/coins';
 import { getDefaultSigHash } from '../../../src/bitgo/signature';
+import * as ecc from 'tiny-secp256k1';
+
+const bip32 = BIP32Factory(ecc);
 
 const utxolib = require('../../../src');
 
@@ -21,9 +25,9 @@ export function requiresSegwit(scriptType: ScriptType): boolean {
   return scriptType === 'p2wkh' || scriptType === 'p2wsh' || scriptType === 'p2shP2wsh';
 }
 
-export type KeyTriple = Triple<bip32.BIP32Interface>;
+export type KeyTriple = Triple<BIP32Interface>;
 
-function getKey(seed: string, network?: Network): bip32.BIP32Interface {
+function getKey(seed: string, network?: Network): BIP32Interface {
   return bip32.fromSeed(crypto.createHash('sha256').update(seed).digest(), network);
 }
 
@@ -100,7 +104,7 @@ export function getTransactionBuilder(network: Network) {
 }
 
 export function createSpendTransactionFromPrevOutputs(
-  keys: bip32.BIP32Interface[],
+  keys: BIP32Interface[],
   scriptType: ScriptType2Of3,
   prevOutputs: [txid: string, index: number, value: number][],
   recipientScript: Buffer,

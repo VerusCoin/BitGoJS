@@ -50,7 +50,7 @@
     "@bitgo/blake2b": "3.0.1",
     "bech32": "0.0.3",
     "bigi": "1.4.0",
-    "bip32": "2.0.6",
+    "bip32": "3.0.0",
     "bip66": "1.1.0",
     "bitcoin-ops": "git+https://github.com/VerusCoin/bitcoin-ops",
     "bs58check": "2.0.0",
@@ -65,14 +65,15 @@
     "typeforce": "1.11.3",
     "varuint-bitcoin": "1.0.4",
     "verus-typescript-primitives": "git+https://github.com/VerusCoin/verus-typescript-primitives.git",
-    "wif": "2.0.1"
+    "wif": "2.0.1",
+    "tiny-secp256k1": "2.0.0"
   },
   "devDependencies": {
     "@types/bn.js": "5.1.1",
     "@types/fs-extra": "9.0.12",
     "@types/mocha": "9.0.0",
     "@types/node": "24.1.0",
-    "axios": "0.21.2",
+    "axios": "1.11.0",
     "bip39": "2.3.0",
     "bip65": "1.0.1",
     "bs58": "4.0.0",
@@ -89,10 +90,31 @@
   },
   "resolutions": {
     "ansi-regex": "5.0.1",
-    "elliptic": "6.6.1"
+    "elliptic": "6.6.1",
+    "jsonpointer": "5.0.0",
+    "ajv": "6.12.3",
+    "minimatch": "3.0.5",
+    "shelljs": "0.8.5",
+    "tiny-secp256k1": "2.0.0",
+    "pbkdf2": "3.1.3",
+    "brace-expansion": "1.1.12",
+    "cross-spawn": "7.0.5",
+    "base-x": "3.0.11",
+    "@babel/helpers": "7.26.10",
+    "word-wrap": "1.2.4",
+    "semver": "6.3.1",
+    "braces": "3.0.3",
+    "minimist": "1.2.6",
+    "@babel/traverse": "7.23.2",
+    "es5-ext": "0.10.63",
+    "follow-redirects": "1.15.6",
+    "json5": "2.2.2",
+    "nanoid": "3.3.8",
+    "secp256k1": "3.8.1",
+    "bip32": "3.0.0"
   },
   "license": "MIT",
   "optionalDependencies": {
-    "secp256k1": "3.5.2"
+    "secp256k1": "3.8.1"
   }
 }
