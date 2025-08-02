@@ -261,6 +261,13 @@
     "@babel/helper-string-parser" "^7.27.1"
     "@babel/helper-validator-identifier" "^7.27.1"
 
+"@bitcoin-js/tiny-secp256k1-asmjs@^2.2.4":
+  version "2.2.4"
+  resolved "https://registry.yarnpkg.com/@bitcoin-js/tiny-secp256k1-asmjs/-/tiny-secp256k1-asmjs-2.2.4.tgz#31b3f0a9afe04be8f2773889891e3ccfec315f23"
+  integrity sha512-Lo62disBIDwPrYAmMsSjEmqak41yb0OFGQVLdktXmcQLgtC1BI5Sd1eHSxNREKZmxMUXevtsgEhGB1DvvatRmQ==
+  dependencies:
+    uint8array-tools "0.0.7"
+
 "@bitgo/blake2b-wasm@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@bitgo/blake2b-wasm/-/blake2b-wasm-3.0.1.tgz#18fb27d6879050e6df98a32543b4c6338ee184bf"
@@ -3526,11 +3533,6 @@ through@^2.3.6:
   resolved "https://registry.yarnpkg.com/through/-/through-2.3.8.tgz#0dd4c9ffaabc357960b1b724115d7e0e86a2e1f5"
   integrity sha1-DdTJ/6q8NXlgsbckEV1+Doai4fU=
 
-tiny-secp256k1@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/tiny-secp256k1/-/tiny-secp256k1-2.0.0.tgz#b628df0697f6a2535c55e0bb90332d0cb03e7712"
-  integrity sha512-fL2GZvXKbsXI3cV+uOpEThSiljKwyXOtmGCEh09j+eysTVdPwgei3yogM8BiXMwxDTlMZjQLYpiJLb1gO0vstw==
-
 to-buffer@^1.2.0:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/to-buffer/-/to-buffer-1.2.1.tgz#2ce650cdb262e9112a18e65dc29dcb513c8155e0"
@@ -3635,6 +3637,11 @@ typescript@5.8.3:
   version "5.8.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.8.3.tgz#92f8a3e5e3cf497356f4178c34cd65a7f5e8440e"
   integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==
+
+uint8array-tools@0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/uint8array-tools/-/uint8array-tools-0.0.7.tgz#a7a2bb5d8836eae2fade68c771454e6a438b390d"
+  integrity sha512-vrrNZJiusLWoFWBqz5Y5KMCgP9W9hnjZHzZiZRT8oNAkq3d5Z5Oe76jAvVVSRh4U8GGR90N2X1dWtrhvx6L8UQ==
 
 unbox-primitive@^1.0.1:
   version "1.0.1"

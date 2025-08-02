@@ -9,7 +9,7 @@ import { Transaction, Triple } from './types';
 import { createOutputScript2of3, ScriptType2Of3, scriptTypes2Of3 } from '../../../src/bitgo/outputScripts';
 import { getMainnet, isBitcoin, isBitcoinGold, isLitecoin, isVerus, isZcashCompatible } from '../../../src/coins';
 import { getDefaultSigHash } from '../../../src/bitgo/signature';
-import * as ecc from 'tiny-secp256k1';
+import * as ecc from '@bitcoin-js/tiny-secp256k1-asmjs';
 
 const bip32 = BIP32Factory(ecc);
 
