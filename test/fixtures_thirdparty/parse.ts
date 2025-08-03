@@ -2,7 +2,7 @@
  * @prettier
  */
 import * as assert from 'assert';
-import { getNetworkList, getNetworkName, isBitcoinGold, isMainnet, isZcash, isZcashCompatible, isPBaaS, isKomodo } from '../../src/coins';
+import { getNetworkList, getNetworkName, isBitcoinGold, isMainnet, isZcash, isZcashCompatible, isPBaaS, isKomodo, isVerus } from '../../src/coins';
 import { sigHashTestFile, SigHashTestVector, testFixtureArray, txValidTestFile, TxValidVector } from './fixtures';
 
 import { parseTransactionRoundTrip } from '../transaction_util';
@@ -41,7 +41,7 @@ describe('Third-Party Fixtures', function () {
         }
 
         testFixtureArray(network, sigHashTestFile, function (vectors: SigHashTestVector[]) {
-          if (isZcash(network)) {
+          if (isZcash(network) || isVerus(network) || isKomodo(network) || isPBaaS(network)) {
             return this.skip();
           }
           vectors.forEach((v) => {

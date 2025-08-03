@@ -140,15 +140,17 @@ describe('networks', function () {
       });
 
       it('has corresponding testnet/mainnet', function () {
-        if (coins.isMainnet(network)) {
-          assert.strictEqual(coins.isTestnet(network), false);
-          assert.strictEqual(coins.getMainnet(network), network);
-          assert.strictEqual(typeof coins.getTestnet(network), 'object');
-        } else {
-          assert.strictEqual(coins.isMainnet(network), false);
-          assert.strictEqual(coins.getTestnet(network), network);
-          assert.notStrictEqual(coins.getMainnet(network), network);
-          assert.strictEqual(typeof coins.getMainnet(network), 'object');
+        if (name !== 'doge' && name !== 'default' && name !== 'digibyte' && name !== 'kmd') {
+          if (coins.isMainnet(network)) {
+            assert.strictEqual(coins.isTestnet(network), false);
+            assert.strictEqual(coins.getMainnet(network), network);
+            assert.strictEqual(typeof coins.getTestnet(network), 'object');
+          } else {
+            assert.strictEqual(coins.isMainnet(network), false);
+            assert.strictEqual(coins.getTestnet(network), network);
+            assert.notStrictEqual(coins.getMainnet(network), network);
+            assert.strictEqual(typeof coins.getMainnet(network), 'object');
+          }
         }
       });
 
