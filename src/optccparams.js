@@ -102,8 +102,8 @@ class OptCCParams {
   }
 
   static fromChunk (chunk) {
-    const writer = new bufferutils.BufferWriter(Buffer.alloc(varuint.encodingLength(chunk.length)), 0);
-    writer.writeVarInt(chunk.length);
+    const writer = new bufferutils.BufferWriter(Buffer.alloc(varuint.encodingLength(chunk.length)), 0)
+    writer.writeVarInt(chunk.length)
 
     const params = new OptCCParams()
 
@@ -113,7 +113,7 @@ class OptCCParams {
   }
 
   toChunk () {
-    return this.toBuffer(undefined, undefined, true);
+    return this.toBuffer(undefined, undefined, true)
   }
 
   fromBuffer (buffer, initialOffset = 0) {
@@ -232,7 +232,7 @@ class OptCCParams {
     } else {
       writeVarSlice(scriptStore)
     }
-    
+
     // avoid slicing unless necessary
     if (initialOffset !== undefined) return buffer.slice(initialOffset, offset)
     // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer

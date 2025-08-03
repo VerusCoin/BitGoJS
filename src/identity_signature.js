@@ -73,13 +73,13 @@ class IdentitySignature {
         .update(_msgHash)
         .digest()
     } else {
-      return createHash("sha256")
+      return createHash('sha256')
         .update(this.chainId)
         .update(heightBufferWriter.buffer)
         .update(this.identity)
         .update(VERUS_DATA_SIGNATURE_PREFIX)
         .update(_msgHash)
-        .digest();
+        .digest()
     }
   }
 

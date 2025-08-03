@@ -59,7 +59,7 @@ var IdentitySignature = /** @class */ (function () {
                 .digest();
         }
         else {
-            return createHash("sha256")
+            return createHash('sha256')
                 .update(this.chainId)
                 .update(heightBufferWriter.buffer)
                 .update(this.identity)
