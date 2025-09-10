@@ -47,7 +47,6 @@
     "dist/src"
   ],
   "dependencies": {
-    "@bitcoin-js/tiny-secp256k1-asmjs": "^2.2.4",
     "@bitgo/blake2b": "3.0.1",
     "@noble/curves": "1.9.7",
     "bech32": "0.0.3",
@@ -70,6 +69,7 @@
     "wif": "2.0.1"
   },
   "devDependencies": {
+    "@bitcoin-js/tiny-secp256k1-asmjs": "^2.2.4",
     "@types/bn.js": "5.1.1",
     "@types/fs-extra": "9.0.12",
     "@types/mocha": "9.0.0",
