@@ -6,16 +6,15 @@ var typeforce = require('typeforce')
 var types = require('./types')
 var wif = require('wif')
 
+const { secp256k1 } = require('@noble/curves/secp256k1');
+
 var NETWORKS = require('./networks')
 var BigInteger = require('bigi')
-
-var EC = require('elliptic').ec
-const BN = require('bn.js')
 const sig = require('./ecsignature')
 
 var ecurve = require('ecurve')
 var curve = ecurve.getCurveByName('secp256k1')
-var secp256k1 = ecdsa.__curve
+var secp256k1Ecurve = ecdsa.__curve
 
 var fastcurve = require('./fastcurve')
 
@@ -31,7 +30,7 @@ function ECPair (d, Q, options) {
 
   if (d) {
     if (d.signum() <= 0) throw new Error('Private key must be greater than 0')
-    if (d.compareTo(secp256k1.n) >= 0) throw new Error('Private key must be less than the curve order')
+    if (d.compareTo(secp256k1Ecurve.n) >= 0) throw new Error('Private key must be less than the curve order')
     if (Q) throw new TypeError('Unexpected publicKey parameter')
 
     this.d = d
@@ -48,29 +47,36 @@ function ECPair (d, Q, options) {
 Object.defineProperty(ECPair.prototype, 'Q', {
   get: function () {
     if (!this.__Q && this.d) {
-      const qBuf = fastcurve.publicKeyCreate(this.d.toBuffer(32), false)
-      this.__Q = qBuf ? ecurve.Point.decodeFrom(curve, qBuf) : secp256k1.G.multiply(this.d)
+      const qBuf = fastcurve.publicKeyCreate(this.d.toBuffer(32), false);
+      if (qBuf) {
+        this.__Q = ecurve.Point.decodeFrom(curve, qBuf);
+      } else {
+        // Use noble to derive public key
+        const pubBytes = secp256k1.getPublicKey(this.d.toBuffer(32), this.compressed);
+        this.__Q = ecurve.Point.decodeFrom(curve, Buffer.from(pubBytes));
+      }
     }
-
-    return this.__Q
+    return this.__Q;
   }
-})
+});
 
 ECPair.recoverFromSignature = function (hashBuffer, compactSigBuffer, network) {
-  const compactParsed = sig.parseCompact(compactSigBuffer)
-  const ecSecp256k1 = new EC('secp256k1')
+  const compactParsed = sig.parseCompact(compactSigBuffer); // { signature: ECSignature, i }
+  const der = compactParsed.signature.toDER();
 
-  const pub = ecSecp256k1.recoverPubKey(new BN(hashBuffer, 16).toString(10), {
-    r: compactParsed.signature.r.toBuffer(),
-    s: compactParsed.signature.s.toBuffer(),
-    recoveryParam: compactParsed.i
-  }, compactParsed.i)
+  // 1) Build noble Signature from DER
+  // 2) Attach recovery bit (0..3). Some libs encode higher; mask to be safe.
+  const recovery = compactParsed.i & 3;
+  const nobleSig = secp256k1.Signature.fromDER(der).addRecoveryBit(recovery);
 
-  return ECPair.fromPublicKeyBuffer(Buffer.from(pub.encodeCompressed()), network)
-}
+  // 3) Recover pubkey from the message hash
+  const pubBytes = nobleSig.recoverPublicKey(hashBuffer).toRawBytes(true); // compressed
+
+  return ECPair.fromPublicKeyBuffer(Buffer.from(pubBytes), network);
+};
 
 ECPair.fromPublicKeyBuffer = function (buffer, network) {
-  var Q = ecurve.Point.decodeFrom(secp256k1, buffer)
+  var Q = ecurve.Point.decodeFrom(secp256k1Ecurve, buffer)
 
   return new ECPair(null, Q, {
     compressed: Q.compressed,
@@ -115,7 +121,7 @@ ECPair.makeRandom = function (options) {
     typeforce(types.Buffer256bit, buffer)
 
     d = BigInteger.fromBuffer(buffer)
-  } while (d.signum() <= 0 || d.compareTo(secp256k1.n) >= 0)
+  } while (d.signum() <= 0 || d.compareTo(secp256k1Ecurve.n) >= 0)
 
   return new ECPair(d, null, options)
 }

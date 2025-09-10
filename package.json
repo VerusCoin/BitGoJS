@@ -49,6 +49,7 @@
   "dependencies": {
     "@bitcoin-js/tiny-secp256k1-asmjs": "^2.2.4",
     "@bitgo/blake2b": "3.0.1",
+    "@noble/curves": "1.9.7",
     "bech32": "0.0.3",
     "bigi": "1.4.0",
     "bip32": "3.0.0",
@@ -90,7 +91,6 @@
   },
   "resolutions": {
     "ansi-regex": "5.0.1",
-    "elliptic": "6.6.1",
     "jsonpointer": "5.0.0",
     "ajv": "6.12.3",
     "minimatch": "3.0.5",
@@ -109,11 +109,7 @@
     "follow-redirects": "1.15.6",
     "json5": "2.2.2",
     "nanoid": "3.3.8",
-    "secp256k1": "3.8.1",
     "bip32": "3.0.0"
   },
-  "license": "MIT",
-  "optionalDependencies": {
-    "secp256k1": "3.8.1"
-  }
+  "license": "MIT"
 }

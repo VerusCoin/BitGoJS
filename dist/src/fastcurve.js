@@ -1,77 +1,41 @@
 var typeforce = require('typeforce');
 var ECSignature = require('./ecsignature');
 var types = require('./types');
-var secp256k1;
-var available = false;
-try {
-    // secp256k1 is an optional native module used for accelerating
-    // low-level elliptic curve operations. It's nice to have, but
-    // we can live without it too
-    secp256k1 = require('secp256k1');
-    available = true;
+// CommonJS import for v1.x (still works)
+var secp256k1 = require('@noble/curves/secp256k1').secp256k1;
+function ensureU8(input) {
+    if (Buffer.isBuffer(input))
+        return new Uint8Array(input);
+    if (input instanceof Uint8Array)
+        return input;
+    throw new TypeError('Expected Uint8Array or Buffer');
 }
-catch (e) {
-    // secp256k1 is not available, this is alright
-}
-/**
- * Derive a public key from a 32 byte private key buffer.
- *
- * Uses secp256k1 for acceleration. If secp256k1 is not available,
- * this function returns undefined.
- *
- * @param buffer {Buffer} Private key buffer
- * @param compressed {Boolean} Whether the public key should be compressed
- * @return {undefined}
- */
 var publicKeyCreate = function (buffer, compressed) {
     typeforce(types.tuple(types.Buffer256bit, types.Boolean), arguments);
-    if (!available) {
-        return undefined;
-    }
-    return secp256k1.publicKeyCreate(buffer, compressed);
+    var privU8 = ensureU8(buffer);
+    var pub = secp256k1.getPublicKey(privU8, compressed);
+    return Buffer.from(pub); // Convert back to Buffer for compatibility
 };
-/**
- * Create an ECDSA signature over the given message hash `hash` with
- * the private key `d`.
- *
- * Uses secp256k1 for acceleration. If secp256k1 is not available,
- * this function returns undefined.
- * @param hash {Buffer} hash of the message which is to be signed
- * @param d {BigInteger} private key which is to be used for signing
- * @return {ECSignature}
- */
 var sign = function (hash, d) {
     typeforce(types.tuple(types.Buffer256bit, types.BigInt), arguments);
-    if (!available) {
-        return undefined;
-    }
-    var sig = secp256k1.sign(hash, d.toBuffer(32)).signature;
-    return ECSignature.fromDER(secp256k1.signatureExport(sig));
+    var hashU8 = ensureU8(hash);
+    var privU8 = ensureU8(d.toBuffer(32));
+    // Create Signature instance
+    var signature = secp256k1.sign(hashU8, privU8);
+    // DER-encode
+    var derU8 = signature.toBytes('der');
+    return ECSignature.fromDER(Buffer.from(derU8));
 };
-/**
- * Verify an ECDSA signature over the given message hash `hash` with signature `sig`
- * and public key `pubkey`.
- *
- * Uses secp256k1 for acceleration. If secp256k1 is not available,
- * this function returns undefined.
- * @param hash {Buffer} hash of the message which is to be verified
- * @param sig {ECSignature} signature which is to be verified
- * @param pubkey {Buffer} public key which will be used to verify the message signature
- * @return {Boolean}
- */
 var verify = function (hash, sig, pubkey) {
-    typeforce(types.tuple(types.Hash256bit, types.ECSignature, 
-    // both compressed and uncompressed public keys are fine
-    types.oneOf(types.BufferN(33), types.BufferN(65))), arguments);
-    if (!available) {
-        return undefined;
-    }
-    sig = new ECSignature(sig.r, sig.s);
-    sig = secp256k1.signatureNormalize(secp256k1.signatureImport(sig.toDER()));
-    return secp256k1.verify(hash, sig, pubkey);
+    typeforce(types.tuple(types.Hash256bit, types.ECSignature, types.oneOf(types.BufferN(33), types.BufferN(65))), arguments);
+    var hashU8 = ensureU8(hash);
+    var pubU8 = ensureU8(pubkey);
+    var der = new ECSignature(sig.r, sig.s).toDER();
+    var s = secp256k1.Signature.fromBytes(der, 'der').normalizeS().toBytes('der');
+    return secp256k1.verify(s, hashU8, pubU8);
 };
 module.exports = {
-    available: available,
+    available: true,
     publicKeyCreate: publicKeyCreate,
     sign: sign,
     verify: verify
