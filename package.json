@@ -109,7 +109,8 @@
     "follow-redirects": "1.15.6",
     "json5": "2.2.2",
     "nanoid": "3.3.8",
-    "bip32": "3.0.0"
+    "bip32": "3.0.0",
+    "b4a": "1.6.7"
   },
   "license": "MIT"
 }

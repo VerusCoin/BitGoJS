@@ -576,7 +576,7 @@ axios@1.11.0:
     form-data "^4.0.4"
     proxy-from-env "^1.1.0"
 
-b4a@^1.0.1:
+b4a@1.6.7, b4a@^1.0.1:
   version "1.6.7"
   resolved "https://registry.yarnpkg.com/b4a/-/b4a-1.6.7.tgz#a99587d4ebbfbd5a6e3b21bdb5d5fa385767abe4"
   integrity sha512-OnAYlL5b7LEkALw87fUVafQw5rVR9RjwGd4KUwNQ6DrrNmaVaUCgLipfVlzrPQ4tWOR9P0IXGNOx50jYCCdSJg==
@@ -3611,7 +3611,7 @@ varuint-bitcoin@1.0.4:
 
 "verus-typescript-primitives@git+https://github.com/VerusCoin/verus-typescript-primitives.git":
   version "1.0.0"
-  resolved "git+https://github.com/VerusCoin/verus-typescript-primitives.git#93d68141829c1a175db17a8cd73dc0c8062a98d4"
+  resolved "git+https://github.com/VerusCoin/verus-typescript-primitives.git#b96b28011595273b18c4aaee97a6b3e3cc0d0850"
   dependencies:
     base64url "3.0.1"
     bech32 "2.0.0"
