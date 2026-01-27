@@ -46,13 +46,15 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
             throw new Error(">1 OptCCParam objects not currently supported for smart transaction params.");
         var processDestination_1 = function (destination) {
             if (destination.destType === 1) {
+                // ADDRTYPE_PK (1)
                 var destStr = destination.destinationBytes.toString();
                 if (!destinations.includes(destStr)) {
                     destinations.push(destStr);
                 }
             }
-            else if (destination.destType === 2 || destination.destType === 4) {
-                var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : 102);
+            else if (destination.destType === 2 || destination.destType === 4 || destination.destType === 5) {
+                // ADDRTYPE_PKH (2) and ADDRTYPE_ID (4) and ADDRTYPE_INDEX (5)
+                var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : destination.destType === 5 ? 137 : 102);
                 if (!destinations.includes(destAddr)) {
                     destinations.push(destAddr);
                 }

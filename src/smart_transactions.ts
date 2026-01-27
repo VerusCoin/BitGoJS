@@ -109,15 +109,17 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
 
     const processDestination = (destination: { destType: number, destinationBytes: Buffer }) => {
       if (destination.destType === 1) {
+        // ADDRTYPE_PK (1)
         const destStr = destination.destinationBytes.toString();
   
         if (!destinations.includes(destStr)) {
           destinations.push(destStr)
         }
-      } else if (destination.destType === 2 || destination.destType === 4) {
+      } else if (destination.destType === 2 || destination.destType === 4 || destination.destType === 5) {
+        // ADDRTYPE_PKH (2) and ADDRTYPE_ID (4) and ADDRTYPE_INDEX (5)
         const destAddr = toBase58Check(
           destination.destinationBytes, 
-          destination.destType === 2 ? 60 : 102
+          destination.destType === 2 ? 60 : destination.destType === 5 ? 137 : 102
         )
   
         if (!destinations.includes(destAddr)) {
