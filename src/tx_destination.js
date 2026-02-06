@@ -1,47 +1,55 @@
 var varuint = require('varuint-bitcoin')
 
 class TxDestination {
+  static TYPE_INVALID = 0;
+  static TYPE_PK = 1
+  static TYPE_PKH = 2
+  static TYPE_SH = 3
+  static TYPE_ID = 4
+  static TYPE_INDEX = 5
+  static TYPE_QUANTUM = 6
+
   get typeInvalid () {
-    return 0
+    return TxDestination.TYPE_INVALID;
   }
   get typePK () {
-    return 1
+    return TxDestination.TYPE_PK;
   }
   get isPK () {
     return this.destType === this.typePK
   }
   get typePKH () {
-    return 2
+    return TxDestination.TYPE_PKH;
   }
   get isPKH () {
     return this.destType === this.typePKH
   }
   get typeSH () {
-    return 3
+    return TxDestination.TYPE_SH;
   }
   get isSH () {
     return this.destType === this.typeSH
   }
   get typeID () {
-    return 4
+    return TxDestination.TYPE_ID;
   }
   get isID () {
     return this.destType === this.typeID
   }
   get typeIndex () {
-    return 5
+    return TxDestination.TYPE_INDEX;
   }
   get isIndex () {
     return this.destType === this.typeIndex
   }
   get typeQuantum () {
-    return 6
+    return TxDestination.TYPE_QUANTUM;
   }
   get isQuantum () {
     return this.destType === this.typeQuantum
   }
   get typeLast () {
-    return 6
+    return TxDestination.TYPE_QUANTUM;
   }
   constructor (destType = this.typePKH, destinationBytes = []) {
     this.destType = destType

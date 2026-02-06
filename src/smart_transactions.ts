@@ -68,7 +68,8 @@ type OutputParams = {
   burnweight?: boolean,
   mintnew?: boolean,
   importtosource?: boolean,
-  bridgeid?: string // if currency is exportto without conversion, destination currency needs to be the bridge
+  bridgeid?: string // if currency is exportto without conversion, destination currency needs to be the bridge,
+  vdxftag?: string
 }
 
 export const unpackOutput = (output: Output, systemId: string, isInput: boolean = false, allowNonTransferEvals: boolean = false): { 
@@ -543,6 +544,9 @@ export const createUnfundedCurrencyTransfer = (
     if (!output.currency) throw new Error("Must specify currency i-address for all outputs");
     if (output.satoshis == null) throw new Error("Must specify satoshis for all outputs");
     if (output.address == null) throw new Error("Must specify address for all outputs");
+
+    //TODO: Implement VDXF tags by adding destination to master optccparams
+    if (output.vdxftag != null) throw new Error("VDXF tags not fully implemented")
     
     const params: OutputParams = {
       currency: output.currency,
@@ -559,7 +563,8 @@ export const createUnfundedCurrencyTransfer = (
       burn: !!(output.burn),
       mintnew: !!(output.mintnew),
       importtosource: !!(output.importtosource),
-      bridgeid: output.bridgeid
+      bridgeid: output.bridgeid,
+      vdxftag: output.vdxftag
     }
 
     // fee_currency_id?: string;
@@ -584,16 +589,16 @@ export const createUnfundedCurrencyTransfer = (
 
     const nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new BN(params.feesatoshis) : new BN(0);
     const nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-    const isPKH = !isReserveTransfer && params.currency === systemId && params.address.type.eq(DEST_PKH);
+    const isPKH = !isReserveTransfer && !output.vdxftag && params.currency === systemId && params.address.type.eq(DEST_PKH);
 
     if (isPKH) {
       txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());
     } else {
-      let outMaster;
-      let outParams;
+      let outMaster: typeof OptCCParams;
+      let outParams: typeof OptCCParams;
       
       if (isReserveTransfer) {
-        const destination = new TxDestination(RESERVE_TRANSFER_DESTINATION.type.toNumber(), RESERVE_TRANSFER_DESTINATION.destination_bytes)
+        const destination = new TxDestination(TxDestination.TYPE_PKH, RESERVE_TRANSFER_DESTINATION.destination_bytes);
         outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination]);
         let flags = new BN(1);
         const version = new BN(1, 10);
@@ -635,7 +640,6 @@ export const createUnfundedCurrencyTransfer = (
         if (values.value_map.size == 0) {
           const destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes)
   
-          // Assume token output
           outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 0, 0, []);
           outParams = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination], []);
         } else {

@@ -8,14 +8,14 @@ var TxDestination = /** @class */ (function () {
     }
     Object.defineProperty(TxDestination.prototype, "typeInvalid", {
         get: function () {
-            return 0;
+            return TxDestination.TYPE_INVALID;
         },
         enumerable: false,
         configurable: true
     });
     Object.defineProperty(TxDestination.prototype, "typePK", {
         get: function () {
-            return 1;
+            return TxDestination.TYPE_PK;
         },
         enumerable: false,
         configurable: true
@@ -29,7 +29,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typePKH", {
         get: function () {
-            return 2;
+            return TxDestination.TYPE_PKH;
         },
         enumerable: false,
         configurable: true
@@ -43,7 +43,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typeSH", {
         get: function () {
-            return 3;
+            return TxDestination.TYPE_SH;
         },
         enumerable: false,
         configurable: true
@@ -57,7 +57,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typeID", {
         get: function () {
-            return 4;
+            return TxDestination.TYPE_ID;
         },
         enumerable: false,
         configurable: true
@@ -71,7 +71,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typeIndex", {
         get: function () {
-            return 5;
+            return TxDestination.TYPE_INDEX;
         },
         enumerable: false,
         configurable: true
@@ -85,7 +85,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typeQuantum", {
         get: function () {
-            return 6;
+            return TxDestination.TYPE_QUANTUM;
         },
         enumerable: false,
         configurable: true
@@ -99,7 +99,7 @@ var TxDestination = /** @class */ (function () {
     });
     Object.defineProperty(TxDestination.prototype, "typeLast", {
         get: function () {
-            return 6;
+            return TxDestination.TYPE_QUANTUM;
         },
         enumerable: false,
         configurable: true
@@ -194,6 +194,13 @@ var TxDestination = /** @class */ (function () {
         // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer
         return buffer.slice(0, offset);
     };
+    TxDestination.TYPE_INVALID = 0;
+    TxDestination.TYPE_PK = 1;
+    TxDestination.TYPE_PKH = 2;
+    TxDestination.TYPE_SH = 3;
+    TxDestination.TYPE_ID = 4;
+    TxDestination.TYPE_INDEX = 5;
+    TxDestination.TYPE_QUANTUM = 6;
     return TxDestination;
 }());
 module.exports = TxDestination;
