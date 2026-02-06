@@ -46,13 +46,15 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
             throw new Error(">1 OptCCParam objects not currently supported for smart transaction params.");
         var processDestination_1 = function (destination) {
             if (destination.destType === 1) {
+                // ADDRTYPE_PK (1)
                 var destStr = destination.destinationBytes.toString();
                 if (!destinations.includes(destStr)) {
                     destinations.push(destStr);
                 }
             }
-            else if (destination.destType === 2 || destination.destType === 4) {
-                var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : 102);
+            else if (destination.destType === 2 || destination.destType === 4 || destination.destType === 5) {
+                // ADDRTYPE_PKH (2) and ADDRTYPE_ID (4) and ADDRTYPE_INDEX (5)
+                var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : destination.destType === 5 ? 137 : 102);
                 if (!destinations.includes(destAddr)) {
                     destinations.push(destAddr);
                 }
@@ -421,6 +423,9 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             throw new Error("Must specify satoshis for all outputs");
         if (output.address == null)
             throw new Error("Must specify address for all outputs");
+        //TODO: Implement VDXF tags by adding destination to master optccparams
+        if (output.vdxftag != null)
+            throw new Error("VDXF tags not fully implemented");
         var params = {
             currency: output.currency,
             satoshis: output.satoshis,
@@ -436,7 +441,8 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             burn: !!(output.burn),
             mintnew: !!(output.mintnew),
             importtosource: !!(output.importtosource),
-            bridgeid: output.bridgeid
+            bridgeid: output.bridgeid,
+            vdxftag: output.vdxftag
         };
         // fee_currency_id?: string;
         // fee_amount?: BigNumber;
@@ -456,7 +462,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
         });
         var nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
         var nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-        var isPKH = !isReserveTransfer && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
+        var isPKH = !isReserveTransfer && !output.vdxftag && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
         if (isPKH) {
             txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());
         }
@@ -464,7 +470,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             var outMaster = void 0;
             var outParams = void 0;
             if (isReserveTransfer) {
-                var destination = new TxDestination(verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.type.toNumber(), verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destination_bytes);
+                var destination = new TxDestination(TxDestination.TYPE_PKH, verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destination_bytes);
                 outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
                 var flags = new bn_js_1.BN(1);
                 var version_1 = new bn_js_1.BN(1, 10);
@@ -508,7 +514,6 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
                 values.value_map.delete(systemId);
                 if (values.value_map.size == 0) {
                     var destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes);
-                    // Assume token output
                     outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 0, 0, []);
                     outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination], []);
                 }
