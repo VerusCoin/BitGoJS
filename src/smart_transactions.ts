@@ -158,7 +158,7 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
           resTransfer.fromBuffer(ccparam.vData[0]);
 
           ccvalues[systemId] = ccvalues[systemId].add(new BN(output.value));
-          resTransfer.reserve_values.value_map.forEach((value, key) => {
+          resTransfer.reserveValues.valueMap.forEach((value, key) => {
             if (key !== systemId) {
               if (!ccvalues[key]) ccvalues[key] = value;
               else ccvalues[key] = ccvalues[key].add(value);
@@ -166,16 +166,16 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
           })
           data = resTransfer;
 
-          const fee = resTransfer.fee_amount;
-          const feecurrency = resTransfer.fee_currency_id;
-          
+          const fee = resTransfer.feeAmount;
+          const feecurrency = resTransfer.feeCurrencyID;
+
           ccfees[feecurrency] = fee;
 
-          if (resTransfer.transfer_destination.fees != null) {
-            ccfees[feecurrency] = ccfees[feecurrency].add(resTransfer.transfer_destination.fees)
+          if (resTransfer.transferDestination.fees != null) {
+            ccfees[feecurrency] = ccfees[feecurrency].add(resTransfer.transferDestination.fees)
           }
 
-          for (const aux_dest of resTransfer.transfer_destination.aux_dests) {
+          for (const aux_dest of resTransfer.transferDestination.auxDests) {
             if (aux_dest.hasAuxDests()) {
               throw new Error("Nested aux destinations not supported");
             }
@@ -184,9 +184,9 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
               ccfees[feecurrency] = ccfees[feecurrency].add(aux_dest.fees);
             }
 
-            processDestination({ 
-              destType: aux_dest.typeNoFlags().toNumber(), 
-              destinationBytes: aux_dest.destination_bytes 
+            processDestination({
+              destType: aux_dest.typeNoFlags().toNumber(),
+              destinationBytes: aux_dest.destinationBytes
             })
           }
 
@@ -200,7 +200,7 @@ export const unpackOutput = (output: Output, systemId: string, isInput: boolean 
           resOutput.fromBuffer(ccparam.vData[0])
 
           ccvalues[systemId] = ccvalues[systemId].add(new BN(output.value));
-          resOutput.reserve_values.value_map.forEach((value, key) => {
+          resOutput.reserveValues.valueMap.forEach((value, key) => {
             if (key !== systemId) {
               if (!ccvalues[key]) ccvalues[key] = value;
               else ccvalues[key] = ccvalues[key].add(value);
@@ -567,13 +567,6 @@ export const createUnfundedCurrencyTransfer = (
       vdxftag: output.vdxftag
     }
 
-    // fee_currency_id?: string;
-    // fee_amount?: BigNumber;
-    // transfer_destination?: TransferDestination;
-    // dest_currency_id?: string;
-    // second_reserve_id?: string;
-    // dest_system_id?: string;
-
     const isReserveTransfer = output.feecurrency != null || 
                               output.feesatoshis != null || 
                               output.convertto != null || 
@@ -583,7 +576,7 @@ export const createUnfundedCurrencyTransfer = (
     const satoshis = new BN(params.satoshis, 10);
 
     const values = new CurrencyValueMap({
-      value_map: new Map([[params.currency, satoshis]]),
+      valueMap: new Map([[params.currency, satoshis]]),
       multivalue: false
     });
 
@@ -598,7 +591,7 @@ export const createUnfundedCurrencyTransfer = (
       let outParams: typeof OptCCParams;
       
       if (isReserveTransfer) {
-        const destination = new TxDestination(TxDestination.TYPE_PKH, RESERVE_TRANSFER_DESTINATION.destination_bytes);
+        const destination = new TxDestination(TxDestination.TYPE_PKH, RESERVE_TRANSFER_DESTINATION.destinationBytes);
         outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination]);
         let flags = new BN(1);
         const version = new BN(1, 10);
@@ -623,27 +616,27 @@ export const createUnfundedCurrencyTransfer = (
           values,
           version,
           flags,
-          fee_currency_id: params.feecurrency,
-          fee_amount: new BN(params.feesatoshis, 10),
-          transfer_destination: params.address,
-          dest_currency_id: output.via ? output.via 
-                                          : 
-                                         (isConversion || params.exportto == null) ? params.convertto : params.bridgeid,
-          second_reserve_id: params.convertto,
-          dest_system_id: params.exportto
+          feeCurrencyID: params.feecurrency,
+          feeAmount: new BN(params.feesatoshis, 10),
+          transferDestination: params.address,
+          destCurrencyID: output.via ? output.via
+                                         :
+                                        (isConversion || params.exportto == null) ? params.convertto : params.bridgeid,
+          secondReserveID: params.convertto,
+          destSystemID: params.exportto
         })
   
         outParams = new OptCCParams(3, EVALS.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
       } else {
-        values.value_map.delete(systemId);
+        values.valueMap.delete(systemId);
 
-        if (values.value_map.size == 0) {
-          const destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes)
-  
+        if (values.valueMap.size == 0) {
+          const destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes)
+
           outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 0, 0, []);
           outParams = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination], []);
         } else {
-          const destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes)
+          const destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes)
   
           // Assume token output
           outMaster = new OptCCParams(3, EVALS.EVAL_NONE, 1, 1, [destination]);

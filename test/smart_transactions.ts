@@ -14,8 +14,8 @@ describe('smarttxs', function () {
   it('creates basic PKH tx when able', function () {
     const addr = new TransferDestination({
       type: new BigNumber(2),
-      destination_bytes: Buffer.from("aaac5e5078ff347462fa72d16ddb88a7eb50a3b2", 'hex'),
-      aux_dests: [],
+      destinationBytes: Buffer.from("aaac5e5078ff347462fa72d16ddb88a7eb50a3b2", 'hex'),
+      auxDests: [],
       fees: new BigNumber(2)
     })
 
@@ -154,14 +154,14 @@ describe('smarttxs', function () {
 
     const transDest = (outputInfo.params[0].data as ReserveTransfer)
 
-    assert.strictEqual(transDest.transfer_destination.isGateway(), true);
-    assert.strictEqual(transDest.transfer_destination.hasAuxDests(), true);
-    assert.strictEqual(transDest.transfer_destination.getAddressString(), "R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx");
-    assert.strictEqual(transDest.transfer_destination.gateway_id, "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq");
-    assert.strictEqual(transDest.transfer_destination.gateway_code, "i3UXS5QPRQGNRDDqVnyWTnmFCTHDbzmsYk");
+    assert.strictEqual(transDest.transferDestination.isGateway(), true);
+    assert.strictEqual(transDest.transferDestination.hasAuxDests(), true);
+    assert.strictEqual(transDest.transferDestination.getAddressString(), "R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx");
+    assert.strictEqual(transDest.transferDestination.gatewayID, "iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq");
+    assert.strictEqual(transDest.transferDestination.gatewayCode, "i3UXS5QPRQGNRDDqVnyWTnmFCTHDbzmsYk");
 
-    assert.strictEqual(transDest.transfer_destination.aux_dests[0].isGateway(), false);
-    assert.strictEqual(transDest.transfer_destination.aux_dests[0].getAddressString(), "R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx");
+    assert.strictEqual(transDest.transferDestination.auxDests[0].isGateway(), false);
+    assert.strictEqual(transDest.transferDestination.auxDests[0].getAddressString(), "R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx");
 
     assert.deepStrictEqual(validation, {
       valid: true,
@@ -849,11 +849,11 @@ describe('smarttxs', function () {
         via: "iCmr2i7wECJzuGisQeUFQJJCASW66Jp7QG",
         address: new TransferDestination({
           type: DEST_PKH.xor(FLAG_DEST_AUX),
-          destination_bytes: destbytes,
-          aux_dests: [
+          destinationBytes: destbytes,
+          auxDests: [
             new TransferDestination({
               type: DEST_PKH,
-              destination_bytes: destbytes
+              destinationBytes: destbytes
             })
           ]
         }),
@@ -885,11 +885,11 @@ describe('smarttxs', function () {
         via: "i84mndBk2Znydpgm9T9pTjVvBnHkhErzLt",
         address: new TransferDestination({
           type: DEST_PKH.xor(FLAG_DEST_AUX),
-          destination_bytes: destbytes,
-          aux_dests: [
+          destinationBytes: destbytes,
+          auxDests: [
             new TransferDestination({
               type: DEST_PKH,
-              destination_bytes: destbytes
+              destinationBytes: destbytes
             })
           ]
         }),
@@ -921,11 +921,11 @@ describe('smarttxs', function () {
         via: "i84mndBk2Znydpgm9T9pTjVvBnHkhErzLt",
         address: new TransferDestination({
           type: DEST_PKH.xor(FLAG_DEST_AUX),
-          destination_bytes: destbytes,
-          aux_dests: [
+          destinationBytes: destbytes,
+          auxDests: [
             new TransferDestination({
               type: DEST_PKH,
-              destination_bytes: destbytes
+              destinationBytes: destbytes
             })
           ]
         }),
@@ -955,7 +955,7 @@ describe('smarttxs', function () {
         satoshis: "100000000",
         address: new TransferDestination({
           type: DEST_ID,
-          destination_bytes: destbytes,
+          destinationBytes: destbytes,
         }),
         preconvert: false,
         burn: false,
@@ -1039,11 +1039,11 @@ describe('smarttxs', function () {
         feecurrency: system,
         address: new TransferDestination({
           type: DEST_PKH.xor(FLAG_DEST_AUX),
-          destination_bytes: destbytes,
-          aux_dests: [
+          destinationBytes: destbytes,
+          auxDests: [
             new TransferDestination({
               type: DEST_PKH,
-              destination_bytes: destbytes
+              destinationBytes: destbytes
             })
           ]
         }),
@@ -1074,7 +1074,7 @@ describe('smarttxs', function () {
         satoshis: "2499980000",
         address: new TransferDestination({
           type: DEST_PKH,
-          destination_bytes: destbytes
+          destinationBytes: destbytes
         }),
         preconvert: false,
         burn: false,
@@ -1101,7 +1101,7 @@ describe('smarttxs', function () {
         satoshis: "100000000",
         address: new TransferDestination({
           type: DEST_PKH,
-          destination_bytes: destbytes
+          destinationBytes: destbytes
         })
       }],
       networks.verustest,
@@ -1130,7 +1130,7 @@ describe('smarttxs', function () {
     const contentmap = new Map();
     contentmap.set("i5GQFGvDunSHk417JhRZRYxrJRKoS9SH1p", Buffer.from("c45c3e2987f09e8c48d9e2681288bd455a18ebc73ef977750724a7fc51bd3263", 'hex'));
 
-    identity.content_map = contentmap;
+    identity.contentMap = contentmap;
 
     paramsOptCC.vdata[0] = identity.toBuffer();
 

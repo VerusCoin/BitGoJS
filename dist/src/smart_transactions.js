@@ -87,7 +87,7 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                     var resTransfer = new verus_typescript_primitives_1.ReserveTransfer();
                     resTransfer.fromBuffer(ccparam.vData[0]);
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
-                    resTransfer.reserve_values.value_map.forEach(function (value, key) {
+                    resTransfer.reserveValues.valueMap.forEach(function (value, key) {
                         if (key !== systemId) {
                             if (!ccvalues[key])
                                 ccvalues[key] = value;
@@ -96,13 +96,13 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                         }
                     });
                     data = resTransfer;
-                    var fee = resTransfer.fee_amount;
-                    var feecurrency = resTransfer.fee_currency_id;
+                    var fee = resTransfer.feeAmount;
+                    var feecurrency = resTransfer.feeCurrencyID;
                     ccfees[feecurrency] = fee;
-                    if (resTransfer.transfer_destination.fees != null) {
-                        ccfees[feecurrency] = ccfees[feecurrency].add(resTransfer.transfer_destination.fees);
+                    if (resTransfer.transferDestination.fees != null) {
+                        ccfees[feecurrency] = ccfees[feecurrency].add(resTransfer.transferDestination.fees);
                     }
-                    for (var _i = 0, _c = resTransfer.transfer_destination.aux_dests; _i < _c.length; _i++) {
+                    for (var _i = 0, _c = resTransfer.transferDestination.auxDests; _i < _c.length; _i++) {
                         var aux_dest = _c[_i];
                         if (aux_dest.hasAuxDests()) {
                             throw new Error("Nested aux destinations not supported");
@@ -112,7 +112,7 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                         }
                         processDestination_1({
                             destType: aux_dest.typeNoFlags().toNumber(),
-                            destinationBytes: aux_dest.destination_bytes
+                            destinationBytes: aux_dest.destinationBytes
                         });
                     }
                     break;
@@ -123,7 +123,7 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                     var resOutput = new verus_typescript_primitives_1.TokenOutput();
                     resOutput.fromBuffer(ccparam.vData[0]);
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
-                    resOutput.reserve_values.value_map.forEach(function (value, key) {
+                    resOutput.reserveValues.valueMap.forEach(function (value, key) {
                         if (key !== systemId) {
                             if (!ccvalues[key])
                                 ccvalues[key] = value;
@@ -444,12 +444,6 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             bridgeid: output.bridgeid,
             vdxftag: output.vdxftag
         };
-        // fee_currency_id?: string;
-        // fee_amount?: BigNumber;
-        // transfer_destination?: TransferDestination;
-        // dest_currency_id?: string;
-        // second_reserve_id?: string;
-        // dest_system_id?: string;
         var isReserveTransfer = output.feecurrency != null ||
             output.feesatoshis != null ||
             output.convertto != null ||
@@ -457,7 +451,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             output.via != null;
         var satoshis = new bn_js_1.BN(params.satoshis, 10);
         var values = new verus_typescript_primitives_1.CurrencyValueMap({
-            value_map: new Map([[params.currency, satoshis]]),
+            valueMap: new Map([[params.currency, satoshis]]),
             multivalue: false
         });
         var nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
@@ -470,7 +464,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             var outMaster = void 0;
             var outParams = void 0;
             if (isReserveTransfer) {
-                var destination = new TxDestination(TxDestination.TYPE_PKH, verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destination_bytes);
+                var destination = new TxDestination(TxDestination.TYPE_PKH, verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destinationBytes);
                 outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
                 var flags = new bn_js_1.BN(1);
                 var version_1 = new bn_js_1.BN(1, 10);
@@ -499,26 +493,26 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
                     values: values,
                     version: version_1,
                     flags: flags,
-                    fee_currency_id: params.feecurrency,
-                    fee_amount: new bn_js_1.BN(params.feesatoshis, 10),
-                    transfer_destination: params.address,
-                    dest_currency_id: output.via ? output.via
+                    feeCurrencyID: params.feecurrency,
+                    feeAmount: new bn_js_1.BN(params.feesatoshis, 10),
+                    transferDestination: params.address,
+                    destCurrencyID: output.via ? output.via
                         :
                             (isConversion || params.exportto == null) ? params.convertto : params.bridgeid,
-                    second_reserve_id: params.convertto,
-                    dest_system_id: params.exportto
+                    secondReserveID: params.convertto,
+                    destSystemID: params.exportto
                 });
                 outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_RESERVE_TRANSFER, 1, 1, [destination], [resTransfer.toBuffer()]);
             }
             else {
-                values.value_map.delete(systemId);
-                if (values.value_map.size == 0) {
-                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes);
+                values.valueMap.delete(systemId);
+                if (values.valueMap.size == 0) {
+                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
                     outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 0, 0, []);
                     outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination], []);
                 }
                 else {
-                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destination_bytes);
+                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
                     // Assume token output
                     outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
                     var version_2 = new bn_js_1.BN(1, 10);
