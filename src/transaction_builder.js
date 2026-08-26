@@ -860,7 +860,11 @@ TransactionBuilder.prototype.sign = function (vin, keyPair, redeemScript, hashTy
     debug('Produced signature (r: %s, s: %s)', signature.r, signature.s)
 
     if (input.signType === scriptTypes.SMART_TRANSACTION) {
-      input.signatures[i] = new SmartTransactionSignatures(1, 1, [
+      // The signature digest above is computed with the caller-requested
+      // hashType; the serialized blob must declare the SAME hashtype or
+      // verification recomputes the digest differently and fails (e.g.
+      // SIGHASH_SINGLE|ANYONECANPAY atomic-swap offers).
+      input.signatures[i] = new SmartTransactionSignatures(1, hashType, [
         new SmartTransactionSignature(
           1,
           1,
@@ -885,6 +889,22 @@ TransactionBuilder.prototype.__canModifyInputs = function () {
     // any signatures?
     if (input.signatures === undefined) return true
 
+    if (input.signType === scriptTypes.SMART_TRANSACTION) {
+      const smartTxSigs = SmartTransactionSignatures.fromChunk(bscript.decompile(input.signatures)[0])
+
+      if (
+        smartTxSigs.error != null ||
+        smartTxSigs.signatures.length === 0 ||
+        smartTxSigs.signatures.every((sig) => sig.oneSignature.length === 0)
+      ) {
+        return true
+      }
+
+      // Smart transaction signatures declare their hash type in the
+      // serialized blob header, not in the trailing byte of a DER signature.
+      return (smartTxSigs.sigHashType & Transaction.SIGHASH_ANYONECANPAY) !== 0
+    }
+
     return input.signatures.every(function (signature) {
       if (!signature) return true
       var hashType = signatureHashType(signature)
@@ -900,7 +920,7 @@ TransactionBuilder.prototype.__canModifyOutputs = function () {
   var nInputs = this.tx.ins.length
   var nOutputs = this.tx.outs.length
 
-  return this.inputs.every(function (input) {
+  return this.inputs.every(function (input, vin) {
     if (input.signatures === undefined) return true
 
     if (input.signType === scriptTypes.SMART_TRANSACTION) {
@@ -913,6 +933,14 @@ TransactionBuilder.prototype.__canModifyOutputs = function () {
       ) {
         return true
       }
+
+      // Smart transaction signatures declare their hash type in the blob
+      // header. SIGHASH_SINGLE binds this input to the output at the same
+      // index, so appending outputs is safe once that output exists.
+      var smartHashTypeMod = smartTxSigs.sigHashType & 0x1f
+      if (smartHashTypeMod === Transaction.SIGHASH_NONE) return true
+      if (smartHashTypeMod === Transaction.SIGHASH_SINGLE) return vin < nOutputs
+      return false
     }
 
     return input.signatures.every(function (signature) {
