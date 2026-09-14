@@ -82,7 +82,7 @@ class IdentitySignature {
         // Try all possible recovery ids until one that can recover the
         // correct pubkey is found. This is not the most efficient way to do this.
         for (recid = 0; recid < 4; recid++) {
-            compactSig = signature.toCompact(recid, true);
+            compactSig = signature.toCompact(recid, keyPair.compressed);
             const recoveredKeyPair = ECPair.recoverFromSignature(buffer, compactSig, this.network);
             if (recoveredKeyPair.getAddress() === signingAddress) {
                 this.signatures.push(compactSig);
@@ -102,7 +102,7 @@ class IdentitySignature {
         for (let i = 0; i < this.signatures.length; i++) {
             try {
                 const sig = ECSignature.parseCompact(this.signatures[i]);
-                const pubKeyPair = ECPair.recoverFromSignature(hash, sig.signature.toCompact(sig.i, true), this.network);
+                const pubKeyPair = ECPair.recoverFromSignature(hash, sig.signature.toCompact(sig.i, sig.compressed), this.network);
                 if (pubKeyPair.getAddress() === signingAddress) {
                     const verification = pubKeyPair.verify(hash, sig.signature);
                     results.push(verification);

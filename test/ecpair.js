@@ -174,6 +174,25 @@ describe('ECPair', function () {
     })
   })
 
+  describe('recoverFromSignature', function () {
+    // Scalar 1, zero hash, recovery id 1; independently checked with tiny-secp256k1.
+    const signature = Buffer.from(
+      'a0b37f8fba683cc68f6574cd43b39f0343a50008bf6ccea9d13231d9e7e2e1e4' +
+      '11edc8d307254296264aebfc3dc76cd8b668373a072fd64665b50000e9fcce52', 'hex'
+    )
+
+    fixtures.valid.filter(f => f.d === '1').forEach(function (f) {
+      it('preserves the ' + (f.compressed ? 'compressed' : 'uncompressed') + ' signature public key', function () {
+        const compact = Buffer.concat([Buffer.from([f.compressed ? 32 : 28]), signature])
+        const recovered = ECPair.recoverFromSignature(Buffer.alloc(32), compact, NETWORKS[f.network])
+
+        assert.strictEqual(recovered.compressed, f.compressed)
+        assert.strictEqual(recovered.getPublicKeyBuffer().toString('hex'), f.Q)
+        assert.strictEqual(recovered.getAddress(), f.address)
+      })
+    })
+  })
+
   describe('toWIF', function () {
     fixtures.valid.forEach(function (f) {
       it('exports ' + f.WIF, function () {

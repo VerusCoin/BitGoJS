@@ -54,14 +54,14 @@ Object.defineProperty(ECPair.prototype, 'Q', {
     }
 });
 ECPair.recoverFromSignature = function (hashBuffer, compactSigBuffer, network) {
-    const compactParsed = sig.parseCompact(compactSigBuffer); // { signature: ECSignature, i }
+    const compactParsed = sig.parseCompact(compactSigBuffer); // { signature: ECSignature, i, compressed }
     const der = compactParsed.signature.toDER();
     // 1) Build noble Signature from DER
     // 2) Attach recovery bit (0..3). Some libs encode higher; mask to be safe.
     const recovery = compactParsed.i & 3;
     const nobleSig = secp256k1.Signature.fromDER(der).addRecoveryBit(recovery);
     // 3) Recover pubkey from the message hash
-    const pubBytes = nobleSig.recoverPublicKey(hashBuffer).toRawBytes(true); // compressed
+    const pubBytes = nobleSig.recoverPublicKey(hashBuffer).toRawBytes(compactParsed.compressed);
     return ECPair.fromPublicKeyBuffer(Buffer.from(pubBytes), network);
 };
 ECPair.fromPublicKeyBuffer = function (buffer, network) {
