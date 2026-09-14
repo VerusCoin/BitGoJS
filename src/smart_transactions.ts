@@ -35,6 +35,11 @@ type BigNumber = typeof BNClass;
 
 type Output = { value: number, script: Buffer }
 
+// Keep accepting the numeric spendability field used by earlier RPC responses.
+type AddressUtxo = Omit<Extract<GetAddressUtxosResponse['result'], Array<unknown>>[number], 'isspendable'> & {
+  isspendable: boolean | number
+}
+
 type Input = {
   hash: Buffer,
   index: number,
@@ -291,7 +296,7 @@ export const validateFundedCurrencyTransfer = (
   unfundedTxHex: string,
   changeAddr: string,
   network: Network,
-  utxoList: GetAddressUtxosResponse['result']): { 
+  utxoList: GetAddressUtxosResponse['result'] | Array<AddressUtxo>): {
     valid: boolean, 
     message?: string, 
     in?: { [currency: string]: string }, 
@@ -300,6 +305,8 @@ export const validateFundedCurrencyTransfer = (
     fees?: { [currency: string]: string },
     sent?: { [currency: string]: string }
   } => {
+
+  const utxos = Array.isArray(utxoList) ? utxoList : utxoList.utxos;
 
   const amountsIn: { [currency: string]: BigNumber } = { [systemId]: new BN(0) };
   const amountsOut: { [currency: string]: BigNumber } = { [systemId]: new BN(0) };
@@ -373,7 +380,7 @@ export const validateFundedCurrencyTransfer = (
   for (const input of (fundedTx.ins as Array<Input>)) {
     const inputHash = Buffer.from(input.hash).reverse().toString('hex')
 
-    const inputUtxoIndex = utxoList.findIndex(x => (
+    const inputUtxoIndex = utxos.findIndex(x => (
       (x.txid === inputHash) && x.outputIndex === input.index)
     )
 
@@ -384,7 +391,7 @@ export const validateFundedCurrencyTransfer = (
       }
     }
 
-    const inputUtxo = utxoList[inputUtxoIndex];
+    const inputUtxo = utxos[inputUtxoIndex];
     const _script = Buffer.from(inputUtxo.script, 'hex')
     const _value = inputUtxo.satoshis
 

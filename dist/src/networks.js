@@ -18,7 +18,7 @@ wif            src/chainparams.cpp       base58Prefixes[SECRET_KEY]        Testn
 forkId         src/script/interpreter.h  FORKID_*
 
 */
-var networkTypes_1 = require("./networkTypes");
+const networkTypes_1 = require("./networkTypes");
 function getDefaultBip32Mainnet() {
     return {
         // base58 'xpub'
@@ -41,7 +41,7 @@ function getDefaultBip32Testnet() {
         private: 0x04358394,
     };
 }
-var networks = {
+const networks = {
     // https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp
     // https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp
     bitcoin: {

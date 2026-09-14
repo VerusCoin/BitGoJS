@@ -1,42 +1,39 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFundedTxBuilder = exports.completeFundedIdentityUpdate = exports.createUnfundedIdentityUpdate = exports.createUnfundedCurrencyTransfer = exports.validateFundedCurrencyTransfer = exports.unpackOutput = void 0;
-var verus_typescript_primitives_1 = require("verus-typescript-primitives");
-var bn_js_1 = require("bn.js");
-var Transaction = require('./transaction.js');
-var TransactionBuilder = require('./transaction_builder.js');
-var TxDestination = require('./tx_destination.js');
-var script = require('./script.js');
-var opcodes = require('bitcoin-ops');
-var OptCCParams = require('./optccparams');
-var templates = require('./templates');
+const verus_typescript_primitives_1 = require("verus-typescript-primitives");
+const bn_js_1 = require("bn.js");
+const Transaction = require('./transaction.js');
+const TransactionBuilder = require('./transaction_builder.js');
+const TxDestination = require('./tx_destination.js');
+const script = require('./script.js');
+const opcodes = require('bitcoin-ops');
+const OptCCParams = require('./optccparams');
+const templates = require('./templates');
 // Hack to force BigNumber to get typeof class instead of BN namespace
-var BNClass = new bn_js_1.BN(0);
-var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
-    var _a, _b;
-    if (isInput === void 0) { isInput = false; }
-    if (allowNonTransferEvals === void 0) { allowNonTransferEvals = false; }
+const BNClass = new bn_js_1.BN(0);
+const unpackOutput = (output, systemId, isInput = false, allowNonTransferEvals = false) => {
     // Verify change output
-    var outputScript = output.script;
-    var outputType = templates.classifyOutput(outputScript);
-    var values = (_a = {}, _a[systemId] = new bn_js_1.BN(0), _a);
-    var fees = (_b = {}, _b[systemId] = new bn_js_1.BN(0), _b);
-    var destinations = [];
-    var master;
-    var params = [];
+    const outputScript = output.script;
+    const outputType = templates.classifyOutput(outputScript);
+    const values = { [systemId]: new bn_js_1.BN(0) };
+    const fees = { [systemId]: new bn_js_1.BN(0) };
+    const destinations = [];
+    let master;
+    const params = [];
     if (outputType === templates.types.P2PK && isInput) {
         values[systemId] = values[systemId].add(new bn_js_1.BN(output.value));
     }
     else if (outputType === templates.types.P2PKH) {
-        var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(templates.pubKeyHash.output.decode(outputScript), 60);
+        const destAddr = (0, verus_typescript_primitives_1.toBase58Check)(templates.pubKeyHash.output.decode(outputScript), 60);
         values[systemId] = values[systemId].add(new bn_js_1.BN(output.value));
         destinations.push(destAddr);
     }
     else if (outputType === templates.types.SMART_TRANSACTION) {
-        var masterOptCC = void 0;
-        var paramsOptCC = [];
-        var decompiledScript = script.decompile(outputScript);
-        for (var i = 0; i < decompiledScript.length; i += 2) {
+        let masterOptCC;
+        const paramsOptCC = [];
+        const decompiledScript = script.decompile(outputScript);
+        for (let i = 0; i < decompiledScript.length; i += 2) {
             if (i === 0)
                 masterOptCC = OptCCParams.fromChunk(decompiledScript[i]);
             else
@@ -44,17 +41,17 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
         }
         if (paramsOptCC.length > 1)
             throw new Error(">1 OptCCParam objects not currently supported for smart transaction params.");
-        var processDestination_1 = function (destination) {
+        const processDestination = (destination) => {
             if (destination.destType === 1) {
                 // ADDRTYPE_PK (1)
-                var destStr = destination.destinationBytes.toString();
+                const destStr = destination.destinationBytes.toString();
                 if (!destinations.includes(destStr)) {
                     destinations.push(destStr);
                 }
             }
             else if (destination.destType === 2 || destination.destType === 4 || destination.destType === 5) {
                 // ADDRTYPE_PKH (2) and ADDRTYPE_ID (4) and ADDRTYPE_INDEX (5)
-                var destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : destination.destType === 5 ? 137 : 102);
+                const destAddr = (0, verus_typescript_primitives_1.toBase58Check)(destination.destinationBytes, destination.destType === 2 ? 60 : destination.destType === 5 ? 137 : 102);
                 if (!destinations.includes(destAddr)) {
                     destinations.push(destAddr);
                 }
@@ -62,32 +59,31 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
             else
                 throw new Error("Unsupported destination type");
         };
-        var processOptCCParam = function (ccparam) {
-            var _a, _b;
-            var data;
-            var ccvalues = (_a = {}, _a[systemId] = new bn_js_1.BN(0), _a);
-            var ccfees = (_b = {}, _b[systemId] = new bn_js_1.BN(0), _b);
+        const processOptCCParam = (ccparam) => {
+            let data;
+            const ccvalues = { [systemId]: new bn_js_1.BN(0) };
+            const ccfees = { [systemId]: new bn_js_1.BN(0) };
             switch (ccparam.evalCode) {
                 case verus_typescript_primitives_1.EVALS.EVAL_NONE:
                     if (ccparam.vData.length !== 0) {
-                        throw new Error("Unexpected length of vdata array for eval code ".concat(ccparam.evalCode));
+                        throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`);
                     }
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
                     break;
                 case verus_typescript_primitives_1.EVALS.EVAL_STAKEGUARD:
                     if (!isInput) {
-                        throw new Error("Cannot create stakeguard output.");
+                        throw new Error(`Cannot create stakeguard output.`);
                     }
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
                     break;
                 case verus_typescript_primitives_1.EVALS.EVAL_RESERVE_TRANSFER:
                     if (ccparam.vData.length !== 1) {
-                        throw new Error("Unexpected length of vdata array for eval code ".concat(ccparam.evalCode));
+                        throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`);
                     }
-                    var resTransfer = new verus_typescript_primitives_1.ReserveTransfer();
+                    const resTransfer = new verus_typescript_primitives_1.ReserveTransfer();
                     resTransfer.fromBuffer(ccparam.vData[0]);
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
-                    resTransfer.reserveValues.valueMap.forEach(function (value, key) {
+                    resTransfer.reserveValues.valueMap.forEach((value, key) => {
                         if (key !== systemId) {
                             if (!ccvalues[key])
                                 ccvalues[key] = value;
@@ -96,21 +92,20 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                         }
                     });
                     data = resTransfer;
-                    var fee = resTransfer.feeAmount;
-                    var feecurrency = resTransfer.feeCurrencyID;
+                    const fee = resTransfer.feeAmount;
+                    const feecurrency = resTransfer.feeCurrencyID;
                     ccfees[feecurrency] = fee;
                     if (resTransfer.transferDestination.fees != null) {
                         ccfees[feecurrency] = ccfees[feecurrency].add(resTransfer.transferDestination.fees);
                     }
-                    for (var _i = 0, _c = resTransfer.transferDestination.auxDests; _i < _c.length; _i++) {
-                        var aux_dest = _c[_i];
+                    for (const aux_dest of resTransfer.transferDestination.auxDests) {
                         if (aux_dest.hasAuxDests()) {
                             throw new Error("Nested aux destinations not supported");
                         }
                         if (aux_dest.fees != null) {
                             ccfees[feecurrency] = ccfees[feecurrency].add(aux_dest.fees);
                         }
-                        processDestination_1({
+                        processDestination({
                             destType: aux_dest.typeNoFlags().toNumber(),
                             destinationBytes: aux_dest.destinationBytes
                         });
@@ -118,12 +113,12 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                     break;
                 case verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT:
                     if (ccparam.vData.length !== 1) {
-                        throw new Error("Unexpected length of vdata array for eval code ".concat(ccparam.evalCode));
+                        throw new Error(`Unexpected length of vdata array for eval code ${ccparam.evalCode}`);
                     }
-                    var resOutput = new verus_typescript_primitives_1.TokenOutput();
+                    const resOutput = new verus_typescript_primitives_1.TokenOutput();
                     resOutput.fromBuffer(ccparam.vData[0]);
                     ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
-                    resOutput.reserveValues.valueMap.forEach(function (value, key) {
+                    resOutput.reserveValues.valueMap.forEach((value, key) => {
                         if (key !== systemId) {
                             if (!ccvalues[key])
                                 ccvalues[key] = value;
@@ -136,7 +131,7 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                 case verus_typescript_primitives_1.EVALS.EVAL_IDENTITY_PRIMARY:
                     if (allowNonTransferEvals) {
                         ccvalues[systemId] = ccvalues[systemId].add(new bn_js_1.BN(output.value));
-                        var id = new verus_typescript_primitives_1.Identity();
+                        const id = new verus_typescript_primitives_1.Identity();
                         id.fromBuffer(ccparam.vData[0]);
                         data = id;
                     }
@@ -153,7 +148,7 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
                     }
                     break;
                 default:
-                    throw new Error("Unsupported eval code ".concat(ccparam.evalCode));
+                    throw new Error(`Unsupported eval code ${ccparam.evalCode}`);
             }
             return {
                 version: ccparam.version,
@@ -166,31 +161,28 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
             };
         };
         master = processOptCCParam(masterOptCC);
-        for (var _i = 0, _c = masterOptCC.destinations; _i < _c.length; _i++) {
-            var destination = _c[_i];
-            processDestination_1(destination);
+        for (const destination of masterOptCC.destinations) {
+            processDestination(destination);
         }
-        for (var _d = 0, paramsOptCC_1 = paramsOptCC; _d < paramsOptCC_1.length; _d++) {
-            var paramsCc = paramsOptCC_1[_d];
-            var processedParams = processOptCCParam(paramsCc);
+        for (const paramsCc of paramsOptCC) {
+            const processedParams = processOptCCParam(paramsCc);
             params.push(processedParams);
-            for (var key in processedParams.values) {
-                var value = processedParams.values[key];
+            for (const key in processedParams.values) {
+                const value = processedParams.values[key];
                 if (!values[key])
                     values[key] = value;
                 else
                     values[key] = values[key].add(value);
             }
-            for (var key in processedParams.fees) {
-                var fee = processedParams.fees[key];
+            for (const key in processedParams.fees) {
+                const fee = processedParams.fees[key];
                 if (!fees[key])
                     fees[key] = fee;
                 else
                     fees[key] = fees[key].add(fee);
             }
-            for (var _e = 0, _f = paramsCc.destinations; _e < _f.length; _e++) {
-                var destination = _f[_e];
-                processDestination_1(destination);
+            for (const destination of paramsCc.destinations) {
+                processDestination(destination);
             }
         }
     }
@@ -198,28 +190,28 @@ var unpackOutput = function (output, systemId, isInput, allowNonTransferEvals) {
         throw new Error("Unsupported output type " + outputType);
     }
     return {
-        destinations: destinations,
-        values: values,
-        fees: fees,
+        destinations,
+        values,
+        fees,
         type: outputType,
         master: master,
         params: params.length > 0 ? params : undefined
     };
 };
 exports.unpackOutput = unpackOutput;
-var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTxHex, changeAddr, network, utxoList) {
-    var _a, _b, _c, _d;
-    var amountsIn = (_a = {}, _a[systemId] = new bn_js_1.BN(0), _a);
-    var amountsOut = (_b = {}, _b[systemId] = new bn_js_1.BN(0), _b);
-    var amountChange = (_c = {}, _c[systemId] = new bn_js_1.BN(0), _c);
-    var amountsFee = (_d = {}, _d[systemId] = new bn_js_1.BN(0), _d);
-    var fundedTx = Transaction.fromHex(fundedTxHex, network);
-    var unfundedTx = Transaction.fromHex(unfundedTxHex, network);
-    var fundedTxComparison = Transaction.fromHex(fundedTxHex, network);
+const validateFundedCurrencyTransfer = (systemId, fundedTxHex, unfundedTxHex, changeAddr, network, utxoList) => {
+    const utxos = Array.isArray(utxoList) ? utxoList : utxoList.utxos;
+    const amountsIn = { [systemId]: new bn_js_1.BN(0) };
+    const amountsOut = { [systemId]: new bn_js_1.BN(0) };
+    const amountChange = { [systemId]: new bn_js_1.BN(0) };
+    const amountsFee = { [systemId]: new bn_js_1.BN(0) };
+    const fundedTx = Transaction.fromHex(fundedTxHex, network);
+    const unfundedTx = Transaction.fromHex(unfundedTxHex, network);
+    const fundedTxComparison = Transaction.fromHex(fundedTxHex, network);
     if (!fundedTxComparison.ins.length) {
         return {
             valid: false,
-            message: "Transaction has ".concat(fundedTxComparison.ins.length, " inputs.")
+            message: `Transaction has ${fundedTxComparison.ins.length} inputs.`
         };
     }
     fundedTxComparison.ins = [];
@@ -229,18 +221,18 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
     fundedTx.ins = fundedTx.ins;
     unfundedTx.ins = unfundedTx.ins;
     fundedTxComparison.ins = fundedTxComparison.ins;
-    var changeOutputs = [];
-    var changeIndices = [];
+    const changeOutputs = [];
+    const changeIndices = [];
     if (!fundedTxComparison.outs.length) {
         return {
             valid: false,
-            message: "Transaction has ".concat(fundedTxComparison.outs.length, " outputs.")
+            message: `Transaction has ${fundedTxComparison.outs.length} outputs.`
         };
     }
     // Find all change outputs
-    for (var i = 0, j = 0; i < fundedTxComparison.outs.length; i++, j++) {
-        var out = fundedTxComparison.outs[i];
-        var outScript = out.script.toString('hex');
+    for (let i = 0, j = 0; i < fundedTxComparison.outs.length; i++, j++) {
+        const out = fundedTxComparison.outs[i];
+        const outScript = out.script.toString('hex');
         if (unfundedTx.outs[j] != null &&
             outScript === unfundedTx.outs[j].script.toString('hex') &&
             out.value === unfundedTx.outs[j].value) {
@@ -253,7 +245,7 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
         }
     }
     // Filter change outputs from tx comparison
-    fundedTxComparison.outs = fundedTxComparison.outs.filter(function (x, i) {
+    fundedTxComparison.outs = fundedTxComparison.outs.filter((x, i) => {
         return !changeIndices.includes(i);
     });
     // Verify funded tx and unfunded tx are the same where 
@@ -261,24 +253,25 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
     if (fundedTxComparison.toHex() !== unfundedTx.toHex()) {
         return {
             valid: false,
-            message: "Transaction hex does not match unfunded component."
+            message: `Transaction hex does not match unfunded component.`
         };
     }
-    var _loop_1 = function (input) {
-        var inputHash = Buffer.from(input.hash).reverse().toString('hex');
-        var inputUtxoIndex = utxoList.findIndex(function (x) { return ((x.txid === inputHash) && x.outputIndex === input.index); });
+    // Verify all inputs are correct and count their amounts
+    for (const input of fundedTx.ins) {
+        const inputHash = Buffer.from(input.hash).reverse().toString('hex');
+        const inputUtxoIndex = utxos.findIndex(x => ((x.txid === inputHash) && x.outputIndex === input.index));
         if (inputUtxoIndex < 0) {
-            return { value: {
-                    valid: false,
-                    message: "Cannot find corresponding input for ".concat(inputHash, " index ").concat(input.index, ".")
-                } };
+            return {
+                valid: false,
+                message: `Cannot find corresponding input for ${inputHash} index ${input.index}.`
+            };
         }
-        var inputUtxo = utxoList[inputUtxoIndex];
-        var _script = Buffer.from(inputUtxo.script, 'hex');
-        var _value = inputUtxo.satoshis;
+        const inputUtxo = utxos[inputUtxoIndex];
+        const _script = Buffer.from(inputUtxo.script, 'hex');
+        const _value = inputUtxo.satoshis;
         try {
-            var inputInfo = (0, exports.unpackOutput)({ value: _value, script: _script }, systemId, true);
-            for (var key in inputInfo.values) {
+            const inputInfo = (0, exports.unpackOutput)({ value: _value, script: _script }, systemId, true);
+            for (const key in inputInfo.values) {
                 if (amountsIn[key] == null) {
                     amountsIn[key] = new bn_js_1.BN(inputInfo.values[key] != null ? inputInfo.values[key] : 0);
                 }
@@ -287,33 +280,26 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
             }
         }
         catch (e) {
-            return { value: {
-                    valid: false,
-                    message: e.message
-                } };
+            return {
+                valid: false,
+                message: e.message
+            };
         }
-    };
-    // Verify all inputs are correct and count their amounts
-    for (var _i = 0, _e = fundedTx.ins; _i < _e.length; _i++) {
-        var input = _e[_i];
-        var state_1 = _loop_1(input);
-        if (typeof state_1 === "object")
-            return state_1.value;
     }
     // Count output amounts (trusted more than input because we verify that they match
     // the outputs submitted in the unfunded transaction)
-    for (var i = 0; i < unfundedTx.outs.length; i++) {
-        var output = unfundedTx.outs[i];
+    for (let i = 0; i < unfundedTx.outs.length; i++) {
+        const output = unfundedTx.outs[i];
         try {
-            var outputInfo = (0, exports.unpackOutput)(output, systemId, false, true);
-            for (var key in outputInfo.values) {
+            const outputInfo = (0, exports.unpackOutput)(output, systemId, false, true);
+            for (const key in outputInfo.values) {
                 if (amountsOut[key] == null) {
                     amountsOut[key] = new bn_js_1.BN(outputInfo.values[key] != null ? outputInfo.values[key] : 0);
                 }
                 else
                     amountsOut[key] = amountsOut[key].add(outputInfo.values[key]);
             }
-            for (var key in outputInfo.fees) {
+            for (const key in outputInfo.fees) {
                 if (amountsFee[key] == null) {
                     amountsFee[key] = new bn_js_1.BN(outputInfo.fees[key] != null ? outputInfo.fees[key] : 0);
                 }
@@ -329,21 +315,21 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
         }
     }
     // Ensure change amounts go to correct destination
-    for (var i = 0; i < changeOutputs.length; i++) {
-        var output = changeOutputs[i];
+    for (let i = 0; i < changeOutputs.length; i++) {
+        const output = changeOutputs[i];
         try {
-            var outputInfo = (0, exports.unpackOutput)(output, systemId);
+            const outputInfo = (0, exports.unpackOutput)(output, systemId);
             if (outputInfo.type !== templates.types.P2PKH && outputInfo.type !== templates.types.SMART_TRANSACTION) {
                 throw new Error("Cannot use non p2pkh/smarttx utxo type as change.");
             }
-            if (outputInfo.destinations.filter(function (x) { return x !== changeAddr; }).length !== 0) {
-                throw new Error("Some change destinations are not ".concat(changeAddr, "."));
+            if (outputInfo.destinations.filter(x => x !== changeAddr).length !== 0) {
+                throw new Error(`Some change destinations are not ${changeAddr}.`);
             }
             if (outputInfo.type === templates.types.SMART_TRANSACTION) {
                 if (outputInfo.params.length !== 1)
                     throw new Error("Invalid param length for change smarttx");
-                var master = outputInfo.master;
-                var param = outputInfo.params[0];
+                const master = outputInfo.master;
+                const param = outputInfo.params[0];
                 if (master.eval !== verus_typescript_primitives_1.EVALS.EVAL_NONE) {
                     throw new Error("Change smartx master must be EVAL_NONE");
                 }
@@ -359,7 +345,7 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
                         throw new Error("Change only supports EVAL_NONE and EVAL_RESERVE_OUTPUT smarttxs");
                 }
             }
-            for (var key in outputInfo.values) {
+            for (const key in outputInfo.values) {
                 if (amountsOut[key] == null)
                     amountsOut[key] = new bn_js_1.BN(outputInfo.values[key] != null ? outputInfo.values[key] : 0);
                 else
@@ -377,46 +363,42 @@ var validateFundedCurrencyTransfer = function (systemId, fundedTxHex, unfundedTx
             };
         }
     }
-    var _in = {};
-    var _out = {};
-    var _change = {};
-    var _fees = {};
-    var _sent = {};
-    for (var key in amountsIn) {
+    const _in = {};
+    const _out = {};
+    const _change = {};
+    const _fees = {};
+    const _sent = {};
+    for (const key in amountsIn) {
         _in[key] = amountsIn[key].toString();
     }
-    for (var key in amountsOut) {
+    for (const key in amountsOut) {
         _out[key] = amountsOut[key].toString();
     }
-    for (var key in amountsFee) {
+    for (const key in amountsFee) {
         _fees[key] = amountsFee[key].toString();
     }
-    for (var key in amountChange) {
+    for (const key in amountChange) {
         _change[key] = amountChange[key].toString();
     }
-    for (var key in amountsIn) {
-        var outVal = amountsOut[key] != null ? amountsOut[key] : new bn_js_1.BN(0);
-        var feeVal = _fees[key] ? new bn_js_1.BN(_fees[key]) : new bn_js_1.BN(0);
+    for (const key in amountsIn) {
+        const outVal = amountsOut[key] != null ? amountsOut[key] : new bn_js_1.BN(0);
+        const feeVal = _fees[key] ? new bn_js_1.BN(_fees[key]) : new bn_js_1.BN(0);
         _fees[key] = (feeVal.add((amountsIn[key].sub(outVal)))).toString();
     }
-    for (var key in amountsIn) {
-        var changeVal = amountChange[key] != null ? amountChange[key] : new bn_js_1.BN(0);
-        var feeVal = _fees[key] ? new bn_js_1.BN(_fees[key]) : new bn_js_1.BN(0);
+    for (const key in amountsIn) {
+        const changeVal = amountChange[key] != null ? amountChange[key] : new bn_js_1.BN(0);
+        const feeVal = _fees[key] ? new bn_js_1.BN(_fees[key]) : new bn_js_1.BN(0);
         _sent[key] = (amountsIn[key].sub(changeVal).sub(feeVal)).toString();
     }
     return { valid: true, in: _in, out: _out, change: _change, fees: _fees, sent: _sent };
 };
 exports.validateFundedCurrencyTransfer = validateFundedCurrencyTransfer;
-var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expiryHeight, version, versionGroupId) {
-    if (expiryHeight === void 0) { expiryHeight = 0; }
-    if (version === void 0) { version = 4; }
-    if (versionGroupId === void 0) { versionGroupId = 0x892f2085; }
-    var txb = new TransactionBuilder(network);
+const createUnfundedCurrencyTransfer = (systemId, outputs, network, expiryHeight = 0, version = 4, versionGroupId = 0x892f2085) => {
+    const txb = new TransactionBuilder(network);
     txb.setVersion(version);
     txb.setExpiryHeight(expiryHeight);
     txb.setVersionGroupId(versionGroupId);
-    for (var _i = 0, outputs_1 = outputs; _i < outputs_1.length; _i++) {
-        var output = outputs_1[_i];
+    for (const output of outputs) {
         if (!output.currency)
             throw new Error("Must specify currency i-address for all outputs");
         if (output.satoshis == null)
@@ -426,7 +408,7 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
         //TODO: Implement VDXF tags by adding destination to master optccparams
         if (output.vdxftag != null)
             throw new Error("VDXF tags not fully implemented");
-        var params = {
+        const params = {
             currency: output.currency,
             satoshis: output.satoshis,
             convertto: output.convertto ? output.convertto : output.currency,
@@ -444,31 +426,31 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             bridgeid: output.bridgeid,
             vdxftag: output.vdxftag
         };
-        var isReserveTransfer = output.feecurrency != null ||
+        const isReserveTransfer = output.feecurrency != null ||
             output.feesatoshis != null ||
             output.convertto != null ||
             output.exportto != null ||
             output.via != null;
-        var satoshis = new bn_js_1.BN(params.satoshis, 10);
-        var values = new verus_typescript_primitives_1.CurrencyValueMap({
+        const satoshis = new bn_js_1.BN(params.satoshis, 10);
+        const values = new verus_typescript_primitives_1.CurrencyValueMap({
             valueMap: new Map([[params.currency, satoshis]]),
             multivalue: false
         });
-        var nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
-        var nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-        var isPKH = !isReserveTransfer && !output.vdxftag && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
+        const nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
+        const nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
+        const isPKH = !isReserveTransfer && !output.vdxftag && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
         if (isPKH) {
             txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());
         }
         else {
-            var outMaster = void 0;
-            var outParams = void 0;
+            let outMaster;
+            let outParams;
             if (isReserveTransfer) {
-                var destination = new TxDestination(TxDestination.TYPE_PKH, verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destinationBytes);
+                const destination = new TxDestination(TxDestination.TYPE_PKH, verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destinationBytes);
                 outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
-                var flags = new bn_js_1.BN(1);
-                var version_1 = new bn_js_1.BN(1, 10);
-                var isConversion = params.convertto != null && params.convertto !== params.currency;
+                let flags = new bn_js_1.BN(1);
+                const version = new bn_js_1.BN(1, 10);
+                const isConversion = params.convertto != null && params.convertto !== params.currency;
                 if (params.importtosource)
                     flags = flags.xor(verus_typescript_primitives_1.RESERVE_TRANSFER_IMPORT_TO_SOURCE);
                 if (params.via != null)
@@ -485,14 +467,14 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
                     flags = flags.xor(verus_typescript_primitives_1.RESERVE_TRANSFER_BURN_CHANGE_PRICE);
                 if (params.burnweight)
                     flags = flags.xor(verus_typescript_primitives_1.RESERVE_TRANSFER_BURN_CHANGE_WEIGHT);
-                var ignoreBridgeId = (isConversion || params.exportto == null);
+                const ignoreBridgeId = (isConversion || params.exportto == null);
                 if (!ignoreBridgeId && params.bridgeid == null) {
                     throw new Error("Bridge ID required");
                 }
-                var resTransfer = new verus_typescript_primitives_1.ReserveTransfer({
-                    values: values,
-                    version: version_1,
-                    flags: flags,
+                const resTransfer = new verus_typescript_primitives_1.ReserveTransfer({
+                    values,
+                    version,
+                    flags,
                     feeCurrencyID: params.feecurrency,
                     feeAmount: new bn_js_1.BN(params.feesatoshis, 10),
                     transferDestination: params.address,
@@ -507,23 +489,23 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
             else {
                 values.valueMap.delete(systemId);
                 if (values.valueMap.size == 0) {
-                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
+                    const destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
                     outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 0, 0, []);
                     outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination], []);
                 }
                 else {
-                    var destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
+                    const destination = new TxDestination(params.address.type.toNumber(), params.address.destinationBytes);
                     // Assume token output
                     outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [destination]);
-                    var version_2 = new bn_js_1.BN(1, 10);
-                    var tokenOutput = new verus_typescript_primitives_1.TokenOutput({
-                        values: values,
-                        version: version_2
+                    const version = new bn_js_1.BN(1, 10);
+                    const tokenOutput = new verus_typescript_primitives_1.TokenOutput({
+                        values,
+                        version
                     });
                     outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
                 }
             }
-            var outputScript = script.compile([
+            const outputScript = script.compile([
                 outMaster.toChunk(),
                 opcodes.OP_CHECKCRYPTOCONDITION,
                 outParams.toChunk(),
@@ -535,36 +517,33 @@ var createUnfundedCurrencyTransfer = function (systemId, outputs, network, expir
     return txb.buildIncomplete().toHex();
 };
 exports.createUnfundedCurrencyTransfer = createUnfundedCurrencyTransfer;
-var createUnfundedIdentityUpdate = function (identityHex, network, expiryHeight, version, versionGroupId) {
-    if (expiryHeight === void 0) { expiryHeight = 0; }
-    if (version === void 0) { version = 4; }
-    if (versionGroupId === void 0) { versionGroupId = 0x892f2085; }
-    var txb = new TransactionBuilder(network);
+const createUnfundedIdentityUpdate = (identityHex, network, expiryHeight = 0, version = 4, versionGroupId = 0x892f2085) => {
+    const txb = new TransactionBuilder(network);
     txb.setVersion(version);
     txb.setExpiryHeight(expiryHeight);
     txb.setVersionGroupId(versionGroupId);
-    var identity = new verus_typescript_primitives_1.Identity();
+    const identity = new verus_typescript_primitives_1.Identity();
     identity.fromBuffer(Buffer.from(identityHex, 'hex'));
-    var outputScript = verus_typescript_primitives_1.IdentityScript.fromIdentity(identity).toBuffer();
+    const outputScript = verus_typescript_primitives_1.IdentityScript.fromIdentity(identity).toBuffer();
     txb.addOutput(outputScript, 0);
     return txb.buildIncomplete().toHex();
 };
 exports.createUnfundedIdentityUpdate = createUnfundedIdentityUpdate;
-var completeFundedIdentityUpdate = function (fundedTxHex, network, prevOutScripts, prevIdentityOutput) {
-    var txb = (0, exports.getFundedTxBuilder)(fundedTxHex, network, prevOutScripts);
+const completeFundedIdentityUpdate = (fundedTxHex, network, prevOutScripts, prevIdentityOutput) => {
+    const txb = (0, exports.getFundedTxBuilder)(fundedTxHex, network, prevOutScripts);
     txb.addInput(prevIdentityOutput.hash, prevIdentityOutput.index, prevIdentityOutput.sequence, prevIdentityOutput.script);
     return txb.buildIncomplete().toHex();
 };
 exports.completeFundedIdentityUpdate = completeFundedIdentityUpdate;
-var getFundedTxBuilder = function (fundedTxHex, network, prevOutScripts) {
-    var tx = Transaction.fromHex(fundedTxHex, network);
-    var inputs = tx.ins;
+const getFundedTxBuilder = (fundedTxHex, network, prevOutScripts) => {
+    const tx = Transaction.fromHex(fundedTxHex, network);
+    const inputs = tx.ins;
     var txb = TransactionBuilder.fromTransaction(tx, network);
     txb.inputs = [];
     txb.tx.ins = [];
-    for (var i = 0; i < inputs.length; i++) {
-        var input = inputs[i];
-        var prevoutscript = prevOutScripts[i];
+    for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        const prevoutscript = prevOutScripts[i];
         delete txb.prevTxMap[input.hash.toString('hex') + ':' + input.index];
         txb.addInput(input.hash, input.index, input.sequence, prevoutscript);
     }

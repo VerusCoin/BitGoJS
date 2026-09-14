@@ -1,7 +1,7 @@
 var Buffer = require('safe-buffer').Buffer;
 var bcrypto = require('./crypto');
 var bscript = require('./script');
-var _a = require('./bufferutils'), BufferReader = _a.BufferReader, BufferWriter = _a.BufferWriter;
+var { BufferReader, BufferWriter } = require('./bufferutils');
 var coins = require('./coins');
 var opcodes = require('bitcoin-ops');
 var networks = require('./networks');
@@ -21,8 +21,7 @@ function vectorSize(someVector) {
     }, 0);
 }
 // By default, assume is a bitcoin transaction
-function Transaction(network) {
-    if (network === void 0) { network = networks.bitcoin; }
+function Transaction(network = networks.bitcoin) {
     this.version = 1;
     this.locktime = 0;
     this.ins = [];
@@ -78,10 +77,9 @@ Transaction.DASH_PROVIDER_UPDATE_REGISTRAR = 3;
 Transaction.DASH_PROVIDER_UPDATE_REVOKE = 4;
 Transaction.DASH_COINBASE = 5;
 Transaction.DASH_QUORUM_COMMITMENT = 6;
-Transaction.fromBuffer = function (buffer, network, __noStrict) {
-    if (network === void 0) { network = networks.bitcoin; }
-    var bufferReader = new BufferReader(buffer);
-    var tx = new Transaction(network);
+Transaction.fromBuffer = function (buffer, network = networks.bitcoin, __noStrict) {
+    let bufferReader = new BufferReader(buffer);
+    let tx = new Transaction(network);
     tx.version = bufferReader.readInt32();
     if (coins.isZcashCompatible(network)) {
         // Split the header into fOverwintered and nVersion
@@ -147,24 +145,24 @@ Transaction.fromBuffer = function (buffer, network, __noStrict) {
             tx.valueBalance = bufferReader.readSlice(8);
             if (!tx.valueBalance.equals(VALUE_INT64_ZERO)) {
                 /* istanbul ignore next */
-                throw new Error("unsupported valueBalance");
+                throw new Error(`unsupported valueBalance`);
             }
             var nShieldedSpend = bufferReader.readVarInt();
             if (nShieldedSpend !== 0) {
                 /* istanbul ignore next */
-                throw new Error("shielded spend not supported");
+                throw new Error(`shielded spend not supported`);
             }
             var nShieldedOutput = bufferReader.readVarInt();
             if (nShieldedOutput !== 0) {
                 /* istanbul ignore next */
-                throw new Error("shielded output not supported");
+                throw new Error(`shielded output not supported`);
             }
         }
         if (tx.supportsJoinSplits()) {
             var joinSplitsLen = bufferReader.readVarInt();
             if (joinSplitsLen !== 0) {
                 /* istanbul ignore next */
-                throw new Error("joinSplits not supported");
+                throw new Error(`joinSplits not supported`);
             }
         }
     }
@@ -441,28 +439,20 @@ Transaction.prototype.hashForSignatureByNetwork = function (inIndex, prevoutScri
 };
 /** @deprecated use hashForSignatureByNetwork */
 /* istanbul ignore next */
-Transaction.prototype.hashForCashSignature = function () {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
-    }
+Transaction.prototype.hashForCashSignature = function (...args) {
     if (coins.getMainnet(this.network) !== networks.bitcoincash &&
         coins.getMainnet(this.network) !== networks.bitcoinsv) {
-        throw new Error("called hashForCashSignature on transaction with network ".concat(coins.getNetworkName(this.network)));
+        throw new Error(`called hashForCashSignature on transaction with network ${coins.getNetworkName(this.network)}`);
     }
-    return this.hashForSignatureByNetwork.apply(this, args);
+    return this.hashForSignatureByNetwork(...args);
 };
 /** @deprecated use hashForSignatureByNetwork */
 /* istanbul ignore next */
-Transaction.prototype.hashForGoldSignature = function () {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
-    }
+Transaction.prototype.hashForGoldSignature = function (...args) {
     if (coins.getMainnet(this.network) !== networks.bitcoingold) {
-        throw new Error("called hashForGoldSignature on transaction with network ".concat(coins.getNetworkName(this.network)));
+        throw new Error(`called hashForGoldSignature on transaction with network ${coins.getNetworkName(this.network)}`);
     }
-    return this.hashForSignatureByNetwork.apply(this, args);
+    return this.hashForSignatureByNetwork(...args);
 };
 /**
  * Blake2b hashing algorithm for Zcash
@@ -624,7 +614,7 @@ Transaction.prototype.hashForZcashSignature = function (inIndex, prevOutScript, 
         return this.getBlake2bHash(bufferWriter.buffer, personalization);
     }
     /* istanbul ignore next */
-    throw new Error("unsupported version");
+    throw new Error(`unsupported version`);
 };
 Transaction.prototype.hashForWitnessV0 = function (inIndex, prevOutScript, value, hashType) {
     typeforce(types.tuple(types.UInt32, types.Buffer, types.Satoshi, types.UInt32), arguments);
@@ -659,7 +649,7 @@ Transaction.prototype.toBuffer = function (buffer, initialOffset) {
 Transaction.prototype.__toBuffer = function (buffer, initialOffset, __allowWitness) {
     if (!buffer)
         buffer = Buffer.allocUnsafe(this.__byteLength(__allowWitness));
-    var bufferWriter = new BufferWriter(buffer, initialOffset || 0);
+    const bufferWriter = new BufferWriter(buffer, initialOffset || 0);
     function writeUInt16(i) {
         bufferWriter.offset = bufferWriter.buffer.writeUInt16LE(i, bufferWriter.offset);
     }

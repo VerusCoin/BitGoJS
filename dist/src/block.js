@@ -51,9 +51,9 @@ Block.prototype.byteLength = function (headersOnly) {
 };
 Block.fromBuffer = function (buffer, network) {
     network = network || networks.bitcoin;
-    var bufferReader = new bufferutils.BufferReader(buffer);
+    const bufferReader = new bufferutils.BufferReader(buffer);
     var block = new Block(network);
-    var headerLength = block.byteLength(true);
+    let headerLength = block.byteLength(true);
     if (buffer.length < headerLength)
         throw new Error('Buffer too small (< ' + headerLength + ' bytes)');
     block.version = bufferReader.readInt32();

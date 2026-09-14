@@ -24,14 +24,14 @@ exports.isDigibyte = isDigibyte;
 /**
  * @prettier
  */
-var networks = require("./networks");
-var networkTypes_1 = require("./networkTypes");
-var typeforce = require('typeforce');
+const networks = require("./networks");
+const networkTypes_1 = require("./networkTypes");
+const typeforce = require('typeforce');
 /**
  * @returns {Network[]} all known networks as array
  */
 function getNetworkList() {
-    return Object.keys(networks).map(function (n) { return networks[n]; });
+    return Object.keys(networks).map((n) => networks[n]);
 }
 /**
  * @param {Network} network
@@ -39,7 +39,7 @@ function getNetworkList() {
  *                   of `networks`
  */
 function getNetworkName(network) {
-    var nameStringOrUndefined = Object.keys(networks).find(function (n) { return networks[n] === network; });
+    const nameStringOrUndefined = Object.keys(networks).find((n) => networks[n] === network);
     if (typeof nameStringOrUndefined === 'string')
         return nameStringOrUndefined;
     else
@@ -110,13 +110,13 @@ function isTestnet(network) {
 function isSameCoin(network, otherNetwork) {
     return getMainnet(network) === getMainnet(otherNetwork);
 }
-var mainnets = getNetworkList().filter(isMainnet);
-var testnets = getNetworkList().filter(isTestnet);
+const mainnets = getNetworkList().filter(isMainnet);
+const testnets = getNetworkList().filter(isTestnet);
 /**
  * Map where keys are mainnet networks and values are testnet networks
  * @type {Map<Network, Network[]>}
  */
-var mainnetTestnetPairs = new Map(mainnets.map(function (m) { return [m, testnets.filter(function (t) { return getMainnet(t) === m; })]; }));
+const mainnetTestnetPairs = new Map(mainnets.map((m) => [m, testnets.filter((t) => getMainnet(t) === m)]));
 /**
  * @param {Network} network
  * @returns {Network|undefined} - The testnet corresponding to a mainnet.
@@ -126,9 +126,9 @@ function getTestnet(network) {
     if (isTestnet(network)) {
         return network;
     }
-    var testnets = mainnetTestnetPairs.get(network);
+    const testnets = mainnetTestnetPairs.get(network);
     if (testnets === undefined) {
-        throw new Error("invalid argument");
+        throw new Error(`invalid argument`);
     }
     if (testnets.length === 0) {
         return;
@@ -136,7 +136,7 @@ function getTestnet(network) {
     if (testnets.length === 1) {
         return testnets[0];
     }
-    throw new Error("more than one testnet for ".concat(getNetworkName(network)));
+    throw new Error(`more than one testnet for ${getNetworkName(network)}`);
 }
 /**
  * @param {Network} network

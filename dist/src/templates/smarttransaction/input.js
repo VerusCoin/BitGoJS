@@ -2,7 +2,7 @@
 var bscript = require('../../script');
 var typeforce = require('typeforce');
 var OPS = require('bitcoin-ops');
-var SmartTransactionSignatures = require('../../smart_transaction_signatures');
+const SmartTransactionSignatures = require('../../smart_transaction_signatures');
 function partialSignature(value) {
     return value === OPS.OP_0 || bscript.isCanonicalSignature(value);
 }
@@ -14,7 +14,7 @@ function check(script) {
 }
 check.toJSON = function () { return 'smart transaction input'; };
 function encodeStack(signature) {
-    var smartTxSigs = SmartTransactionSignatures.fromChunk(signature);
+    const smartTxSigs = SmartTransactionSignatures.fromChunk(signature);
     if (smartTxSigs.error == null)
         return [signature];
     else

@@ -8,10 +8,10 @@ exports.createTransactionForNetwork = createTransactionForNetwork;
 /**
  * @prettier
  */
-var networks = require("../networks");
-var coins_1 = require("../coins");
-var Transaction = require('../transaction');
-var TransactionBuilder = require('../transaction_builder');
+const networks = require("../networks");
+const coins_1 = require("../coins");
+const Transaction = require('../transaction');
+const TransactionBuilder = require('../transaction_builder');
 function createTransactionFromBuffer(buf, network) {
     switch ((0, coins_1.getMainnet)(network)) {
         case networks.bitcoin:
@@ -24,7 +24,7 @@ function createTransactionFromBuffer(buf, network) {
             return Transaction.fromBuffer(buf, network);
     }
     /* istanbul ignore next */
-    throw new Error("invalid network");
+    throw new Error(`invalid network`);
 }
 function createTransactionFromHex(hex, network) {
     return createTransactionFromBuffer(Buffer.from(hex, 'hex'), network);
@@ -37,7 +37,7 @@ function createTransactionBuilderForNetwork(network) {
         case networks.bitcoingold:
         case networks.dash:
         case networks.litecoin: {
-            var txb = new TransactionBuilder(network);
+            const txb = new TransactionBuilder(network);
             switch ((0, coins_1.getMainnet)(network)) {
                 case networks.bitcoincash:
                 case networks.bitcoinsv:
@@ -46,7 +46,7 @@ function createTransactionBuilderForNetwork(network) {
             return txb;
         }
         case networks.zcash: {
-            var txb = new TransactionBuilder(network);
+            const txb = new TransactionBuilder(network);
             txb.setVersion(4);
             txb.setVersionGroupId(0x892f2085);
             // Use "Canopy" consensus branch ID https://zips.z.cash/zip-0251
@@ -55,7 +55,7 @@ function createTransactionBuilderForNetwork(network) {
         }
     }
     /* istanbul ignore next */
-    throw new Error("invalid network");
+    throw new Error(`invalid network`);
 }
 function createTransactionBuilderFromTransaction(tx) {
     switch ((0, coins_1.getMainnet)(tx.network)) {
@@ -69,7 +69,7 @@ function createTransactionBuilderFromTransaction(tx) {
             return TransactionBuilder.fromTransaction(tx, tx.network);
     }
     /* istanbul ignore next */
-    throw new Error("invalid network");
+    throw new Error(`invalid network`);
 }
 function createTransactionForNetwork(network) {
     switch ((0, coins_1.getMainnet)(network)) {
@@ -83,5 +83,5 @@ function createTransactionForNetwork(network) {
             return new Transaction(network);
     }
     /* istanbul ignore next */
-    throw new Error("invalid network");
+    throw new Error(`invalid network`);
 }

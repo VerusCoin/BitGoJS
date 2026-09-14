@@ -21,7 +21,7 @@ var ECSignature = require('./ecsignature');
 var Transaction = require('./transaction');
 var SmartTransactionSignatures = require('./smart_transaction_signatures');
 var SmartTransactionSignature = require('./smart_transaction_signature');
-var getMainnet = require('./coins').getMainnet;
+const { getMainnet } = require('./coins');
 var debug = require('debug')('bitgo:utxolib:txbuilder');
 function supportedType(type) {
     return SIGNABLE.indexOf(type) !== -1;
@@ -466,8 +466,7 @@ TransactionBuilder.prototype.setLockTime = function (locktime) {
     }
     this.tx.locktime = locktime;
 };
-TransactionBuilder.prototype.setVersion = function (version, overwinter) {
-    if (overwinter === void 0) { overwinter = true; }
+TransactionBuilder.prototype.setVersion = function (version, overwinter = true) {
     typeforce(types.UInt32, version);
     if (coins.isZcashCompatible(this.network)) {
         if (!this.network.consensusBranchId.hasOwnProperty(this.tx.version)) {
@@ -487,10 +486,10 @@ TransactionBuilder.prototype.setConsensusBranchId = function (consensusBranchId)
         if (input.prevOutType === scriptTypes.SMART_TRANSACTION) {
             if (input.signatures === undefined || input.signatures.length === 0)
                 return true;
-            var smartTxSigs = SmartTransactionSignatures.fromChunk(bscript.decompile(input.signatures)[0]);
+            const smartTxSigs = SmartTransactionSignatures.fromChunk(bscript.decompile(input.signatures)[0]);
             if (smartTxSigs.error != null ||
                 smartTxSigs.signatures.length === 0 ||
-                smartTxSigs.signatures.every(function (sig) { return sig.oneSignature.length === 0; })) {
+                smartTxSigs.signatures.every((sig) => sig.oneSignature.length === 0)) {
                 return true;
             }
         }
@@ -785,10 +784,10 @@ TransactionBuilder.prototype.__canModifyOutputs = function () {
         if (input.signatures === undefined)
             return true;
         if (input.signType === scriptTypes.SMART_TRANSACTION) {
-            var smartTxSigs = SmartTransactionSignatures.fromChunk(bscript.decompile(input.signatures)[0]);
+            const smartTxSigs = SmartTransactionSignatures.fromChunk(bscript.decompile(input.signatures)[0]);
             if (smartTxSigs.error != null ||
                 smartTxSigs.signatures.length === 0 ||
-                smartTxSigs.signatures.every(function (sig) { return sig.oneSignature.length === 0; })) {
+                smartTxSigs.signatures.every((sig) => sig.oneSignature.length === 0)) {
                 return true;
             }
         }

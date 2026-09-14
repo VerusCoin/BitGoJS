@@ -3,7 +3,7 @@ var bscript = require('../../script');
 var types = require('../../types');
 var typeforce = require('typeforce');
 var OPS = require('bitcoin-ops');
-var OptCCParams = require('../../optccparams');
+const OptCCParams = require('../../optccparams');
 var OP_INT_BASE = OPS.OP_RESERVED; // OP_1 - 1
 function check(script) {
     var chunks = bscript.decompile(script);
@@ -15,8 +15,8 @@ function check(script) {
         !(chunks[chunks.length - 1] === OPS.OP_DROP && chunks[1] === OPS.OP_CHECKCRYPTOCONDITION)) {
         return false;
     }
-    var params = OptCCParams.fromChunk(chunks[2]);
-    var master = OptCCParams.fromChunk(chunks[0]);
+    const params = OptCCParams.fromChunk(chunks[2]);
+    const master = OptCCParams.fromChunk(chunks[0]);
     if (!params.isValid() || !master.isValid()) {
         return false;
     }

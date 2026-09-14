@@ -5,7 +5,7 @@
 import * as assert from 'assert';
 import { validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput, completeFundedIdentityUpdate, createUnfundedIdentityUpdate } from '../src/smart_transactions';
 import networks = require('../src/networks');
-import { BigNumber, DEST_ID, DEST_PKH, FLAG_DEST_AUX, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
+import { BigNumber, DEST_ID, DEST_PKH, FLAG_DEST_AUX, GetAddressUtxosResponse, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
 
 const Transaction = require('../src/transaction.js');
 const TransactionBuilder = require('../src/transaction_builder.js');
@@ -42,7 +42,7 @@ describe('smarttxs', function () {
     assert.equal(transfer, "0400008085202f890001c07f4d0e000000001976a914aaac5e5078ff347462fa72d16ddb88a7eb50a3b288ac0000000040420f000000000000000000000000");
   });
   
-  it('validates successful token output to p2pkh', function () {
+  describe('validates successful token output to p2pkh', function () {
     const unfundedtx = "0400008085202f89000100e1f505000000001976a91487bcb238974658d8bda6a19f9d3f2dd04339b8f788ac00000000f2aa00000000000000000000000000"
     const fundedtx = "0400008085202f89016b0611ccc9f1f3e4572c02f984de1999726625b1c482ace67581def10253e9050100000000feffffff02d066e20b00000000781a040300010114402f01e78edb0f5c8251658dde07f0d52b12e972cc4c59040309010114402f01e78edb0f5c8251658dde07f0d52b12e9723e86fefeff010275939018c507ed9cf366d309d4614b2e43ca3c0090603008db080000848374dd2a47335f0252c8caa066b94de4bf800f804a5d05000000007500e1f505000000001976a91487bcb238974658d8bda6a19f9d3f2dd04339b8f788ac00000000f2aa00000000000000000000000000"
     const changeaddr = "RF8ZdvjvGMNdtu3jNwcmaTDeU8hFJ28ajN"
@@ -66,16 +66,7 @@ describe('smarttxs', function () {
       }
     ]
 
-    const validation = validateFundedCurrencyTransfer(
-      system, 
-      fundedtx, 
-      unfundedtx, 
-      changeaddr, 
-      networks.verustest, 
-      utxos
-    )
-
-    assert.deepStrictEqual(validation, {
+    const expectedValidation = {
       valid: true,
       in: {
         iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq: '299396832',
@@ -102,7 +93,63 @@ describe('smarttxs', function () {
         iECDGNNufPkSa9aHfbnQUjvhRN6YGR8eKM: '0',
         iFZC7A1HnnJGwBmoPjX3mG37RKbjZZLPhm: '0'
       }
-    })
+    }
+
+    const booleanUtxos = utxos.map(({ address, txid, outputIndex, script, satoshis, height }) => ({
+      address,
+      txid,
+      outputIndex,
+      script,
+      satoshis,
+      height,
+      isspendable: true
+    }));
+
+    it('accepts legacy numeric isspendable values', function () {
+      const validation = validateFundedCurrencyTransfer(
+        system, fundedtx, unfundedtx, changeaddr, networks.verustest, utxos
+      );
+
+      assert.deepStrictEqual(validation, expectedValidation);
+    });
+
+    it('accepts the upstream UTXO array with boolean isspendable and omitted optional fields', function () {
+      const result: GetAddressUtxosResponse['result'] = booleanUtxos;
+      const validation = validateFundedCurrencyTransfer(
+        system, fundedtx, unfundedtx, changeaddr, networks.verustest, result
+      );
+
+      assert.deepStrictEqual(validation, expectedValidation);
+    });
+
+    it('preserves all validation accounting for the upstream chainInfo result', function () {
+      const result: GetAddressUtxosResponse['result'] = {
+        utxos: booleanUtxos,
+        hash: '00'.repeat(32),
+        height: 43762
+      };
+      const validation = validateFundedCurrencyTransfer(
+        system, fundedtx, unfundedtx, changeaddr, networks.verustest, result
+      );
+
+      assert.deepStrictEqual(validation, expectedValidation);
+    });
+
+    it('rejects a missing input in the upstream chainInfo result', function () {
+      const result: GetAddressUtxosResponse['result'] = {
+        utxos: [],
+        hash: '00'.repeat(32),
+        height: 43762
+      };
+      const validation = validateFundedCurrencyTransfer(
+        system, fundedtx, unfundedtx, changeaddr, networks.verustest, result
+      );
+
+      assert.deepStrictEqual(validation, {
+        valid: false,
+        message: `Cannot find corresponding input for ${utxos[0].txid} index ${utxos[0].outputIndex}.`
+      });
+    });
   });
 
   it('validates exportto from chain with bridge converter', function () {
@@ -1132,7 +1179,7 @@ describe('smarttxs', function () {
 
     identity.contentMap = contentmap;
 
-    paramsOptCC.vdata[0] = identity.toBuffer();
+    paramsOptCC.vData[0] = identity.toBuffer();
 
     const newParamsOut = paramsOptCC.toChunk();
 

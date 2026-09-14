@@ -1,27 +1,25 @@
 var Buffer = require('safe-buffer').Buffer;
 var bscript = require('./script');
 var varuint = require('varuint-bitcoin');
-var SmartTransactionSignature = require('./smart_transaction_signature');
-var SmartTransactionSignatures = /** @class */ (function () {
-    function SmartTransactionSignatures(version, sigHashType, signatures) {
-        if (version === void 0) { version = 1; }
-        if (sigHashType === void 0) { sigHashType = 1; }
+const SmartTransactionSignature = require('./smart_transaction_signature');
+class SmartTransactionSignatures {
+    constructor(version = 1, sigHashType = 1, signatures) {
         this.version = version;
         this.sigHashType = sigHashType;
         this.signatures = signatures || [];
         this.error = null;
     }
-    SmartTransactionSignatures.prototype.isValid = function () {
+    isValid() {
         return this.version > 0 && this.version < 2 && bscript.isDefinedHashType(this.sigHashType) && this.signatures.length > 0;
-    };
-    SmartTransactionSignatures.prototype.__byteLength = function () {
+    }
+    __byteLength() {
         return this.signatures.reduce(function (a, x) { return a + x.__byteLength(); }, 2 + varuint.encodingLength(this.signatures.length));
-    };
-    SmartTransactionSignatures.prototype.minLength = function () {
-        var checkSigs = new SmartTransactionSignatures();
+    }
+    minLength() {
+        const checkSigs = new SmartTransactionSignatures();
         return checkSigs.__byteLength();
-    };
-    SmartTransactionSignatures.prototype.toBuffer = function (buffer, initialOffset) {
+    }
+    toBuffer(buffer, initialOffset) {
         var noBuffer = !buffer;
         if (noBuffer)
             buffer = Buffer.allocUnsafe(this.__byteLength());
@@ -34,7 +32,7 @@ var SmartTransactionSignatures = /** @class */ (function () {
         writeUInt8(this.version);
         writeUInt8(this.sigHashType);
         writeVarInt(this.signatures ? this.signatures.length : 0);
-        this.signatures.forEach(function (x) {
+        this.signatures.forEach(x => {
             offset = x.toBuffer(buffer, offset);
         });
         // avoid slicing unless necessary
@@ -42,17 +40,16 @@ var SmartTransactionSignatures = /** @class */ (function () {
             return noBuffer ? buffer.slice(initialOffset, offset) : offset;
         // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer
         return noBuffer ? buffer.slice(0, offset) : offset;
-    };
-    SmartTransactionSignatures.fromChunk = function (chunk) {
-        var sigs = new SmartTransactionSignatures();
+    }
+    static fromChunk(chunk) {
+        const sigs = new SmartTransactionSignatures();
         sigs.fromBuffer(chunk);
         return sigs;
-    };
-    SmartTransactionSignatures.prototype.toChunk = function () {
+    }
+    toChunk() {
         return this.toBuffer();
-    };
-    SmartTransactionSignatures.prototype.fromBuffer = function (buffer, initialOffset) {
-        if (initialOffset === void 0) { initialOffset = 0; }
+    }
+    fromBuffer(buffer, initialOffset = 0) {
         var offset = initialOffset;
         function readUInt8() {
             var i = buffer.readUInt8(offset);
@@ -80,7 +77,7 @@ var SmartTransactionSignatures = /** @class */ (function () {
                 return initialOffset;
             }
             this.signatures = this.signatures ? this.signatures : [];
-            for (var numSignatures = readVarInt(); numSignatures > 0; numSignatures--) {
+            for (let numSignatures = readVarInt(); numSignatures > 0; numSignatures--) {
                 this.signatures[this.signatures.length] = readOneSig();
             }
         }
@@ -90,7 +87,6 @@ var SmartTransactionSignatures = /** @class */ (function () {
             return initialOffset;
         }
         return offset;
-    };
-    return SmartTransactionSignatures;
-}());
+    }
+}
 module.exports = SmartTransactionSignatures;

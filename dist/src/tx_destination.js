@@ -1,121 +1,62 @@
 var varuint = require('varuint-bitcoin');
-var TxDestination = /** @class */ (function () {
-    function TxDestination(destType, destinationBytes) {
-        if (destType === void 0) { destType = this.typePKH; }
-        if (destinationBytes === void 0) { destinationBytes = []; }
+class TxDestination {
+    get typeInvalid() {
+        return TxDestination.TYPE_INVALID;
+    }
+    get typePK() {
+        return TxDestination.TYPE_PK;
+    }
+    get isPK() {
+        return this.destType === this.typePK;
+    }
+    get typePKH() {
+        return TxDestination.TYPE_PKH;
+    }
+    get isPKH() {
+        return this.destType === this.typePKH;
+    }
+    get typeSH() {
+        return TxDestination.TYPE_SH;
+    }
+    get isSH() {
+        return this.destType === this.typeSH;
+    }
+    get typeID() {
+        return TxDestination.TYPE_ID;
+    }
+    get isID() {
+        return this.destType === this.typeID;
+    }
+    get typeIndex() {
+        return TxDestination.TYPE_INDEX;
+    }
+    get isIndex() {
+        return this.destType === this.typeIndex;
+    }
+    get typeQuantum() {
+        return TxDestination.TYPE_QUANTUM;
+    }
+    get isQuantum() {
+        return this.destType === this.typeQuantum;
+    }
+    get typeLast() {
+        return TxDestination.TYPE_QUANTUM;
+    }
+    constructor(destType = this.typePKH, destinationBytes = []) {
         this.destType = destType;
         this.destinationBytes = destinationBytes;
     }
-    Object.defineProperty(TxDestination.prototype, "typeInvalid", {
-        get: function () {
-            return TxDestination.TYPE_INVALID;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typePK", {
-        get: function () {
-            return TxDestination.TYPE_PK;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isPK", {
-        get: function () {
-            return this.destType === this.typePK;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typePKH", {
-        get: function () {
-            return TxDestination.TYPE_PKH;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isPKH", {
-        get: function () {
-            return this.destType === this.typePKH;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typeSH", {
-        get: function () {
-            return TxDestination.TYPE_SH;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isSH", {
-        get: function () {
-            return this.destType === this.typeSH;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typeID", {
-        get: function () {
-            return TxDestination.TYPE_ID;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isID", {
-        get: function () {
-            return this.destType === this.typeID;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typeIndex", {
-        get: function () {
-            return TxDestination.TYPE_INDEX;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isIndex", {
-        get: function () {
-            return this.destType === this.typeIndex;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typeQuantum", {
-        get: function () {
-            return TxDestination.TYPE_QUANTUM;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "isQuantum", {
-        get: function () {
-            return this.destType === this.typeQuantum;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(TxDestination.prototype, "typeLast", {
-        get: function () {
-            return TxDestination.TYPE_QUANTUM;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    TxDestination.prototype.isValid = function () {
+    isValid() {
         return this.destType > this.typeInvalid && this.destType <= this.typeLast && this.destinationBytes && this.destinationBytes.length;
-    };
-    TxDestination.fromChunk = function (chunk) {
+    }
+    static fromChunk(chunk) {
         var prefix = Buffer.alloc(1);
         prefix.writeUInt8(chunk.length, 0);
-        var dest = new TxDestination();
+        const dest = new TxDestination();
         dest.fromBuffer(Buffer.concat([prefix, chunk]));
         return dest;
-    };
-    TxDestination.prototype.fromBuffer = function (buffer, initialOffset) {
-        if (initialOffset === void 0) { initialOffset = 0; }
+    }
+    fromBuffer(buffer, initialOffset = 0) {
         var offset = initialOffset;
         function readSlice(n) {
             offset += n;
@@ -129,7 +70,7 @@ var TxDestination = /** @class */ (function () {
         function readVarSlice() {
             return readSlice(readVarInt());
         }
-        var destByteVector = readVarSlice();
+        const destByteVector = readVarSlice();
         if (destByteVector.length === 20) {
             this.destType = this.typePKH;
             this.destinationBytes = destByteVector;
@@ -143,8 +84,8 @@ var TxDestination = /** @class */ (function () {
             this.destinationBytes = destByteVector.slice(1);
         }
         return offset;
-    };
-    TxDestination.prototype.__byteLength = function () {
+    }
+    __byteLength() {
         if (this.destType === this.typePKH) {
             return 21;
         }
@@ -154,11 +95,11 @@ var TxDestination = /** @class */ (function () {
         else {
             return varuint.encodingLength(this.destinationBytes.length + 1) + this.destinationBytes.length + 1;
         }
-    };
-    TxDestination.prototype.toChunk = function () {
+    }
+    toChunk() {
         return this.toBuffer().slice(1);
-    };
-    TxDestination.prototype.toBuffer = function (buffer, initialOffset) {
+    }
+    toBuffer(buffer, initialOffset) {
         if (!buffer)
             buffer = Buffer.allocUnsafe(this.__byteLength());
         var offset = initialOffset || 0;
@@ -181,26 +122,25 @@ var TxDestination = /** @class */ (function () {
             writeVarSlice(this.destinationBytes);
         }
         else {
-            var combinedVector_1 = Buffer.alloc(1 + this.destinationBytes.length);
-            combinedVector_1.writeUInt8(this.destType, 0);
-            this.destinationBytes.forEach(function (x, index) {
-                combinedVector_1.writeUInt8(x, index + 1);
+            const combinedVector = Buffer.alloc(1 + this.destinationBytes.length);
+            combinedVector.writeUInt8(this.destType, 0);
+            this.destinationBytes.forEach((x, index) => {
+                combinedVector.writeUInt8(x, index + 1);
             });
-            writeVarSlice(combinedVector_1);
+            writeVarSlice(combinedVector);
         }
         // avoid slicing unless necessary
         if (initialOffset !== undefined)
             return buffer.slice(initialOffset, offset);
         // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer
         return buffer.slice(0, offset);
-    };
-    TxDestination.TYPE_INVALID = 0;
-    TxDestination.TYPE_PK = 1;
-    TxDestination.TYPE_PKH = 2;
-    TxDestination.TYPE_SH = 3;
-    TxDestination.TYPE_ID = 4;
-    TxDestination.TYPE_INDEX = 5;
-    TxDestination.TYPE_QUANTUM = 6;
-    return TxDestination;
-}());
+    }
+}
+TxDestination.TYPE_INVALID = 0;
+TxDestination.TYPE_PK = 1;
+TxDestination.TYPE_PKH = 2;
+TxDestination.TYPE_SH = 3;
+TxDestination.TYPE_ID = 4;
+TxDestination.TYPE_INDEX = 5;
+TxDestination.TYPE_QUANTUM = 6;
 module.exports = TxDestination;

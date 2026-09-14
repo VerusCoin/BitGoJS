@@ -6,8 +6,8 @@ exports.createOutputScript2of3 = createOutputScript2of3;
 /**
  * @prettier
  */
-var script = require("../script");
-var crypto = require("../crypto");
+const script = require("../script");
+const crypto = require("../crypto");
 exports.scriptTypes2Of3 = ['p2sh', 'p2shP2wsh', 'p2wsh'];
 function isScriptType2Of3(t) {
     return exports.scriptTypes2Of3.includes(t);
@@ -20,17 +20,17 @@ function isScriptType2Of3(t) {
  */
 function createOutputScript2of3(pubkeys, scriptType) {
     if (pubkeys.length !== 3) {
-        throw new Error("must provide 3 pubkeys");
+        throw new Error(`must provide 3 pubkeys`);
     }
-    pubkeys.forEach(function (key) {
+    pubkeys.forEach((key) => {
         if (key.length !== 33) {
-            throw new Error("Unexpected key length ".concat(key.length, ". Must use compressed keys."));
+            throw new Error(`Unexpected key length ${key.length}. Must use compressed keys.`);
         }
     });
-    var script2of3 = script.multisig.output.encode(2, pubkeys);
-    var p2wshOutputScript = script.witnessScriptHash.output.encode(crypto.sha256(script2of3));
-    var redeemScript;
-    var witnessScript;
+    const script2of3 = script.multisig.output.encode(2, pubkeys);
+    const p2wshOutputScript = script.witnessScriptHash.output.encode(crypto.sha256(script2of3));
+    let redeemScript;
+    let witnessScript;
     switch (scriptType) {
         case 'p2sh':
             redeemScript = script2of3;
@@ -43,15 +43,15 @@ function createOutputScript2of3(pubkeys, scriptType) {
             witnessScript = script2of3;
             break;
         default:
-            throw new Error("unknown multisig script type ".concat(scriptType));
+            throw new Error(`unknown multisig script type ${scriptType}`);
     }
-    var scriptPubKey;
+    let scriptPubKey;
     if (scriptType === 'p2wsh') {
         scriptPubKey = p2wshOutputScript;
     }
     else {
-        var redeemScriptHash = crypto.hash160(redeemScript);
+        const redeemScriptHash = crypto.hash160(redeemScript);
         scriptPubKey = script.scriptHash.output.encode(redeemScriptHash);
     }
-    return { redeemScript: redeemScript, witnessScript: witnessScript, scriptPubKey: scriptPubKey };
+    return { redeemScript, witnessScript, scriptPubKey };
 }

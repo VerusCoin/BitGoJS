@@ -1,7 +1,7 @@
 /* eslint-disable */
-var types = require('./types');
-var typeforce = require('typeforce');
-var varuint = require('varuint-bitcoin');
+const types = require('./types');
+const typeforce = require('typeforce');
+const varuint = require('varuint-bitcoin');
 // https://github.com/feross/buffer/blob/master/index.js#L1127
 function verifuint(value, max) {
     if (typeof value !== 'number')
@@ -14,8 +14,8 @@ function verifuint(value, max) {
         throw new Error('value has a fractional component');
 }
 function readUInt64LE(buffer, offset) {
-    var a = buffer.readUInt32LE(offset);
-    var b = buffer.readUInt32LE(offset + 4);
+    const a = buffer.readUInt32LE(offset);
+    let b = buffer.readUInt32LE(offset + 4);
     b *= 0x100000000;
     verifuint(b + a, 0x001fffffffffffff);
     return b + a;
@@ -29,9 +29,9 @@ function writeUInt64LE(buffer, value, offset) {
 function reverseBuffer(buffer) {
     if (buffer.length < 1)
         return buffer;
-    var j = buffer.length - 1;
-    var tmp = 0;
-    for (var i = 0; i < buffer.length / 2; i++) {
+    let j = buffer.length - 1;
+    let tmp = 0;
+    for (let i = 0; i < buffer.length / 2; i++) {
         tmp = buffer[i];
         buffer[i] = buffer[j];
         buffer[j] = tmp;
@@ -42,105 +42,100 @@ function reverseBuffer(buffer) {
 /**
  * Helper class for serialization of bitcoin data types into a pre-allocated buffer.
  */
-var BufferWriter = /** @class */ (function () {
-    function BufferWriter(buffer, offset) {
-        if (offset === void 0) { offset = 0; }
+class BufferWriter {
+    constructor(buffer, offset = 0) {
         this.buffer = buffer;
         this.offset = offset;
         typeforce(types.tuple(types.Buffer, types.UInt32), [buffer, offset]);
     }
-    BufferWriter.prototype.writeUInt8 = function (i) {
+    writeUInt8(i) {
         this.offset = this.buffer.writeUInt8(i, this.offset);
-    };
-    BufferWriter.prototype.writeInt32 = function (i) {
+    }
+    writeInt32(i) {
         this.offset = this.buffer.writeInt32LE(i, this.offset);
-    };
-    BufferWriter.prototype.writeUInt32 = function (i) {
+    }
+    writeUInt32(i) {
         this.offset = this.buffer.writeUInt32LE(i, this.offset);
-    };
-    BufferWriter.prototype.writeUInt64 = function (i) {
+    }
+    writeUInt64(i) {
         this.offset = writeUInt64LE(this.buffer, i, this.offset);
-    };
-    BufferWriter.prototype.writeVarInt = function (i) {
+    }
+    writeVarInt(i) {
         varuint.encode(i, this.buffer, this.offset);
         this.offset += varuint.encode.bytes;
-    };
-    BufferWriter.prototype.writeSlice = function (slice) {
+    }
+    writeSlice(slice) {
         if (this.buffer.length < this.offset + slice.length) {
             throw new Error('Cannot write slice out of bounds');
         }
         this.offset += slice.copy(this.buffer, this.offset);
-    };
-    BufferWriter.prototype.writeVarSlice = function (slice) {
+    }
+    writeVarSlice(slice) {
         this.writeVarInt(slice.length);
         this.writeSlice(slice);
-    };
-    BufferWriter.prototype.writeVector = function (vector) {
-        var _this = this;
+    }
+    writeVector(vector) {
         this.writeVarInt(vector.length);
-        vector.forEach(function (buf) { return _this.writeVarSlice(buf); });
-    };
-    return BufferWriter;
-}());
+        vector.forEach((buf) => this.writeVarSlice(buf));
+    }
+}
 /**
  * Helper class for reading of bitcoin data types from a buffer.
  */
-var BufferReader = /** @class */ (function () {
-    function BufferReader(buffer, offset) {
-        if (offset === void 0) { offset = 0; }
+class BufferReader {
+    constructor(buffer, offset = 0) {
         this.buffer = buffer;
         this.offset = offset;
         typeforce(types.tuple(types.Buffer, types.UInt32), [buffer, offset]);
     }
-    BufferReader.prototype.readUInt8 = function () {
-        var result = this.buffer.readUInt8(this.offset);
+    readUInt8() {
+        const result = this.buffer.readUInt8(this.offset);
         this.offset++;
         return result;
-    };
-    BufferReader.prototype.readInt32 = function () {
-        var result = this.buffer.readInt32LE(this.offset);
+    }
+    readInt32() {
+        const result = this.buffer.readInt32LE(this.offset);
         this.offset += 4;
         return result;
-    };
-    BufferReader.prototype.readUInt32 = function () {
-        var result = this.buffer.readUInt32LE(this.offset);
+    }
+    readUInt32() {
+        const result = this.buffer.readUInt32LE(this.offset);
         this.offset += 4;
         return result;
-    };
-    BufferReader.prototype.readUInt64 = function () {
-        var result = readUInt64LE(this.buffer, this.offset);
+    }
+    readUInt64() {
+        const result = readUInt64LE(this.buffer, this.offset);
         this.offset += 8;
         return result;
-    };
-    BufferReader.prototype.readVarInt = function () {
-        var vi = varuint.decode(this.buffer, this.offset);
+    }
+    readVarInt() {
+        const vi = varuint.decode(this.buffer, this.offset);
         this.offset += varuint.decode.bytes;
         return vi;
-    };
-    BufferReader.prototype.readSlice = function (n) {
+    }
+    readSlice(n) {
         if (this.buffer.length < this.offset + n) {
             throw new Error('Cannot read slice out of bounds');
         }
-        var result = this.buffer.slice(this.offset, this.offset + n);
+        const result = this.buffer.slice(this.offset, this.offset + n);
         this.offset += n;
         return result;
-    };
-    BufferReader.prototype.readVarSlice = function () {
+    }
+    readVarSlice() {
         return this.readSlice(this.readVarInt());
-    };
-    BufferReader.prototype.readVector = function () {
-        var count = this.readVarInt();
-        var vector = [];
-        for (var i = 0; i < count; i++)
+    }
+    readVector() {
+        const count = this.readVarInt();
+        const vector = [];
+        for (let i = 0; i < count; i++)
             vector.push(this.readVarSlice());
         return vector;
-    };
-    return BufferReader;
-}());
+    }
+}
 module.exports = {
-    readUInt64LE: readUInt64LE,
-    writeUInt64LE: writeUInt64LE,
-    reverseBuffer: reverseBuffer,
-    BufferWriter: BufferWriter,
-    BufferReader: BufferReader,
+    readUInt64LE,
+    writeUInt64LE,
+    reverseBuffer,
+    BufferWriter,
+    BufferReader,
 };

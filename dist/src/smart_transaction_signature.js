@@ -1,9 +1,7 @@
 var Buffer = require('safe-buffer').Buffer;
 var varuint = require('varuint-bitcoin');
-var SmartTransactionSignature = /** @class */ (function () {
-    function SmartTransactionSignature(version, sigType, pubKeyData, oneSignature) {
-        if (version === void 0) { version = 1; }
-        if (sigType === void 0) { sigType = 1; }
+class SmartTransactionSignature {
+    constructor(version = 1, sigType = 1, pubKeyData, oneSignature) {
         this.sigType = sigType;
         this.pubKeyData = pubKeyData;
         if (oneSignature != null) {
@@ -13,7 +11,7 @@ var SmartTransactionSignature = /** @class */ (function () {
             this.oneSignature = new Buffer(0);
         }
     }
-    SmartTransactionSignature.prototype.fromBuffer = function (buffer, initialOffset) {
+    fromBuffer(buffer, initialOffset) {
         var offset = initialOffset || 0;
         function readSlice(n) {
             offset += n;
@@ -36,13 +34,13 @@ var SmartTransactionSignature = /** @class */ (function () {
         this.pubKeyData = readVarSlice();
         this.oneSignature = readVarSlice();
         return offset;
-    };
-    SmartTransactionSignature.prototype.__byteLength = function () {
+    }
+    __byteLength() {
         return 1 +
             varuint.encodingLength(this.pubKeyData.length) + this.pubKeyData.length +
             varuint.encodingLength(this.oneSignature.length) + this.oneSignature.length;
-    };
-    SmartTransactionSignature.prototype.toBuffer = function (buffer, initialOffset) {
+    }
+    toBuffer(buffer, initialOffset) {
         var noBuffer = !buffer;
         if (noBuffer)
             buffer = Buffer.allocUnsafe(this.__byteLength());
@@ -62,7 +60,6 @@ var SmartTransactionSignature = /** @class */ (function () {
             return noBuffer ? buffer.slice(initialOffset, offset) : offset;
         // TODO (https://github.com/BitGo/bitgo-utxo-lib/issues/11): we shouldn't have to slice the final buffer
         return noBuffer ? buffer.slice(0, offset) : offset;
-    };
-    return SmartTransactionSignature;
-}());
+    }
+}
 module.exports = SmartTransactionSignature;

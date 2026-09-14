@@ -5,10 +5,10 @@ var randomBytes = require('randombytes');
 var typeforce = require('typeforce');
 var types = require('./types');
 var wif = require('wif');
-var secp256k1 = require('@noble/curves/secp256k1').secp256k1;
+const { secp256k1 } = require('@noble/curves/secp256k1');
 var NETWORKS = require('./networks');
 var BigInteger = require('bigi');
-var sig = require('./ecsignature');
+const sig = require('./ecsignature');
 var ecurve = require('ecurve');
 var curve = ecurve.getCurveByName('secp256k1');
 var secp256k1Ecurve = ecdsa.__curve;
@@ -40,13 +40,13 @@ function ECPair(d, Q, options) {
 Object.defineProperty(ECPair.prototype, 'Q', {
     get: function () {
         if (!this.__Q && this.d) {
-            var qBuf = fastcurve.publicKeyCreate(this.d.toBuffer(32), false);
+            const qBuf = fastcurve.publicKeyCreate(this.d.toBuffer(32), false);
             if (qBuf) {
                 this.__Q = ecurve.Point.decodeFrom(curve, qBuf);
             }
             else {
                 // Use noble to derive public key
-                var pubBytes = secp256k1.getPublicKey(this.d.toBuffer(32), this.compressed);
+                const pubBytes = secp256k1.getPublicKey(this.d.toBuffer(32), this.compressed);
                 this.__Q = ecurve.Point.decodeFrom(curve, Buffer.from(pubBytes));
             }
         }
@@ -54,14 +54,14 @@ Object.defineProperty(ECPair.prototype, 'Q', {
     }
 });
 ECPair.recoverFromSignature = function (hashBuffer, compactSigBuffer, network) {
-    var compactParsed = sig.parseCompact(compactSigBuffer); // { signature: ECSignature, i }
-    var der = compactParsed.signature.toDER();
+    const compactParsed = sig.parseCompact(compactSigBuffer); // { signature: ECSignature, i }
+    const der = compactParsed.signature.toDER();
     // 1) Build noble Signature from DER
     // 2) Attach recovery bit (0..3). Some libs encode higher; mask to be safe.
-    var recovery = compactParsed.i & 3;
-    var nobleSig = secp256k1.Signature.fromDER(der).addRecoveryBit(recovery);
+    const recovery = compactParsed.i & 3;
+    const nobleSig = secp256k1.Signature.fromDER(der).addRecoveryBit(recovery);
     // 3) Recover pubkey from the message hash
-    var pubBytes = nobleSig.recoverPublicKey(hashBuffer).toRawBytes(true); // compressed
+    const pubBytes = nobleSig.recoverPublicKey(hashBuffer).toRawBytes(true); // compressed
     return ECPair.fromPublicKeyBuffer(Buffer.from(pubBytes), network);
 };
 ECPair.fromPublicKeyBuffer = function (buffer, network) {
@@ -71,8 +71,7 @@ ECPair.fromPublicKeyBuffer = function (buffer, network) {
         network: network
     });
 };
-ECPair.fromWIF = function (string, network, skipVersionCheck) {
-    if (skipVersionCheck === void 0) { skipVersionCheck = false; }
+ECPair.fromWIF = function (string, network, skipVersionCheck = false) {
     var decoded = wif.decode(string);
     var version = decoded.version;
     // list of networks?
