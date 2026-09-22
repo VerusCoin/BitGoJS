@@ -3,12 +3,371 @@
  */
 /* global describe, it */
 import * as assert from 'assert';
-import { validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput, completeFundedIdentityUpdate, createUnfundedIdentityUpdate } from '../src/smart_transactions';
+import { validateCurrencyTransferIntent, CurrencyTransferIntent, validateFundedCurrencyTransfer, createUnfundedCurrencyTransfer, unpackOutput, completeFundedIdentityUpdate, createUnfundedIdentityUpdate } from '../src/smart_transactions';
 import networks = require('../src/networks');
-import { BigNumber, DEST_ID, DEST_PKH, FLAG_DEST_AUX, GetAddressUtxosResponse, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
+import { BigNumber, DEST_ETH, DEST_ID, DEST_PKH, FLAG_DEST_AUX, FLAG_DEST_GATEWAY, RESERVE_TRANSFER_CONVERT, RESERVE_TRANSFER_CROSS_SYSTEM, RESERVE_TRANSFER_IMPORT_TO_SOURCE, RESERVE_TRANSFER_PRECONVERT, RESERVE_TRANSFER_RESERVE_TO_RESERVE, GetAddressUtxosResponse, Identity, OptCCParams, ReserveTransfer, TransferDestination, compile, decompile, fromBase58Check } from 'verus-typescript-primitives';
 
 const Transaction = require('../src/transaction.js');
 const TransactionBuilder = require('../src/transaction_builder.js');
+
+describe('validateCurrencyTransferIntent', function () {
+  const system = 'iJhCezBExJHvtyH3fGhNnt2NhU4Ztkf2yq';
+  const fractional = 'iECDGNNufPkSa9aHfbnQUjvhRN6YGR8eKM';
+  const reserve = 'iQP7TeWNDNsF7aaaCkQzNyS4jDjdKncNWf';
+  const remote = 'iNC9NG5Jqk2tqVtqfjfiSpaqxrXaFU6RDu';
+  const bridge = 'iCmr2i7wECJzuGisQeUFQJJCASW66Jp7QG';
+  const prelaunch = 'iMxcxy7b8B62UM8sumRpjSMJzo95ZKLE5R';
+  const ethGateway = 'iCtawpxUiCc2sEupt7Z4u8SDAncGZpgSKm';
+  const ethBridge = 'iSojYsotVzXz4wh2eJriASGo6UidJDDhL2';
+  const zeroCode = 'i3UXS5QPRQGNRDDqVnyWTnmFCTHDbzmsYk';
+  const pkh = (address: string) => TransferDestination.fromJson({ type: 2, address });
+  const identity = (address: string) => TransferDestination.fromJson({ type: 4, address });
+
+  // Existing daemon gateway fixture below: a local fee conversion followed by export.
+  const gatewayHex = '0400008085202f8900015512bc0100000000de1a040300010114cb8a0f7f651b484a81e2312c3438deb601e27368cc4cbf040308010114cb8a0f7f651b484a81e2312c3438deb601e273684ca301a6ef9ea235635e328124ff3429db9f9e91b64e2daed6c10001cd51509db53e822df7eed11cac11e7b729e22400809b2ac214002d3311c38bfd219092d2aef449804be8b3befea6ef9ea235635e328124ff3429db9f9e91b64e2d00000000000000000000000000000000000000002bc4bb010000000001160214002d3311c38bfd219092d2aef449804be8b3befe65ffba3d69510d6f31845e60b9ee0c275389f84f75000000004b6a01000000000000000000000000';
+  type Context = Parameters<typeof validateCurrencyTransferIntent>[4];
+  type Fixture = { name: string, system: string, hex: string, intent: CurrencyTransferIntent, context: Context };
+  const definitions: Context['currencyDefinitions'] = {
+    [system]: { systemid: system, options: 0 },
+    [fractional]: { systemid: system, options: 1, currencies: [system, reserve] },
+    [reserve]: { systemid: system, options: 32 },
+    [remote]: { systemid: remote, options: 0 },
+    [bridge]: { systemid: remote, options: 1, currencies: [system, remote] },
+    [prelaunch]: { systemid: system, launchsystemid: system, options: 1, currencies: [system, reserve] },
+    [ethGateway]: { systemid: system, options: 128 },
+    [ethBridge]: { systemid: system, options: 1, currencies: [system, ethGateway] }
+  };
+  const context = (importCurrency: string, routeSystem = system, fee = '20010'): Context => ({
+    currencyDefinitions: definitions,
+    route: { importCurrency, system: routeSystem },
+    fees: { currency: system, transferSatoshis: fee, destinationSatoshis: '0' },
+    auxiliaryDestinations: []
+  });
+
+  function rewrite(hex: string, edit: (transfer: ReserveTransfer) => void): string {
+    const tx = Transaction.fromHex(hex, networks.verustest);
+    const chunks = decompile(tx.outs[0].script) as [Buffer, number, Buffer, number];
+    const params = OptCCParams.fromChunk(chunks[2]);
+    const transfer = new ReserveTransfer();
+    transfer.fromBuffer(params.vData[0]);
+    edit(transfer);
+    params.vData[0] = transfer.toBuffer();
+    chunks[2] = params.toChunk();
+    tx.outs[0].script = compile(chunks);
+    return tx.toHex();
+  }
+
+  // Wrap unchanged protocol fixture bytes from the installed primitives' reservetransfer.test.ts.
+  function wrap(vdata: string, nativeValue: number): string {
+    const tx = Transaction.fromHex(gatewayHex, networks.verustest);
+    const chunks = decompile(tx.outs[0].script) as [Buffer, number, Buffer, number];
+    const params = OptCCParams.fromChunk(chunks[2]);
+    params.vData[0] = Buffer.from(vdata, 'hex');
+    chunks[2] = params.toChunk();
+    tx.outs[0] = { script: compile(chunks), value: nativeValue };
+    return tx.toHex();
+  }
+
+  const toFractional: Fixture = {
+    name: 'reserve to fractional', system,
+    hex: wrap('01a6ef9ea235635e328124ff3429db9f9e91b64e2d82dbea930003a6ef9ea235635e328124ff3429db9f9e91b64e2d809b2a0214048f85c0afbd2977370b76ab33e2933d2b643a0575939018c507ed9cf366d309d4614b2e43ca3c00', 1000020010),
+    intent: { currency: system, satoshis: '1000000000', convertto: fractional, address: pkh('R9hJiQ8Evh2ehU68GveFfXGDwdRcPKSbip') },
+    context: context(fractional)
+  };
+  const toReserve: Fixture = {
+    name: 'fractional to reserve with IMPORT_TO_SOURCE', system,
+    hex: wrap('0175939018c507ed9cf366d309d4614b2e43ca3c0082dbea93008303a6ef9ea235635e328124ff3429db9f9e91b64e2d809b2a0414848374dd2a47335f0252c8caa066b94de4bf800fe5548cd120855cfb556307543f86d63d0fec02b5', 20010),
+    intent: { currency: fractional, satoshis: '1000000000', convertto: reserve, address: identity('iFZC7A1HnnJGwBmoPjX3mG37RKbjZZLPhm') },
+    context: context(fractional)
+  };
+  const via: Fixture = {
+    name: 'reserve to reserve via an off-chain bridge', system,
+    hex: wrap('01a6ef9ea235635e328124ff3429db9f9e91b64e2ddc8ff5f3008743a6ef9ea235635e328124ff3429db9f9e91b64e2d89942402149726d26ec83c44ed77d2c464b5107c0d164b813065ffba3d69510d6f31845e60b9ee0c275389f84fcd51509db53e822df7eed11cac11e7b729e22400cd51509db53e822df7eed11cac11e7b729e22400', 25000166564),
+    intent: { currency: system, satoshis: '25000000000', via: bridge, convertto: remote, exportto: remote, address: pkh('RP4Qct9197i5vrS11qHVtdyRRoAHVNJS47') },
+    context: context(bridge, remote, '166564')
+  };
+  const preconvert: Fixture = {
+    name: 'explicit preconversion', system,
+    hex: wrap('01a6ef9ea235635e328124ff3429db9f9e91b64e2ddc8ff5f30007a6ef9ea235635e328124ff3429db9f9e91b64e2d809b200414848374dd2a47335f0252c8caa066b94de4bf800fcac28788c8b70db738fc3ee9e28923004ffbc71f', 25000020000),
+    intent: { currency: system, satoshis: '25000000000', convertto: prelaunch, preconvert: true, address: identity('iFZC7A1HnnJGwBmoPjX3mG37RKbjZZLPhm') },
+    context: context(prelaunch, system, '20000')
+  };
+  const direct: Fixture = {
+    name: 'direct export without conversion', system,
+    hex: rewrite(via.hex, transfer => { transfer.flags = new BigNumber(65); }),
+    intent: { currency: system, satoshis: '25000000000', exportto: remote, address: pkh('RP4Qct9197i5vrS11qHVtdyRRoAHVNJS47') },
+    context: context(bridge, remote, '166564')
+  };
+  const gateway: Fixture = {
+    name: 'local fee conversion and gateway export without principal conversion', system: remote, hex: gatewayHex,
+    intent: { currency: system, satoshis: '100000000', exportto: system, address: pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx'), refundto: pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx') },
+    context: {
+      currencyDefinitions: definitions,
+      route: { importCurrency: bridge, system: remote, gateway: { system, code: zeroCode } },
+      fees: { currency: remote, transferSatoshis: '20010', destinationSatoshis: '29082667' },
+      auxiliaryDestinations: [pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx')]
+    }
+  };
+  const local: Fixture = {
+    name: 'local reserve transfer without conversion', system,
+    hex: rewrite(toFractional.hex, transfer => { transfer.flags = new BigNumber(1); transfer.destCurrencyID = system; }),
+    intent: { currency: system, satoshis: '1000000000', address: toFractional.intent.address },
+    context: context(system)
+  };
+  const eth: Fixture = {
+    name: 'ETH gateway export with two approved auxiliary destinations', system,
+    // Existing "can validate spend to dest eth" daemon fixture below.
+    hex: '0400008085202f8900014aa6205000000000f51a040300010114cb8a0f7f651b484a81e2312c3438deb601e27368cc4cd6040308010114cb8a0f7f651b484a81e2312c3438deb601e273684cba01a6ef9ea235635e328124ff3429db9f9e91b64e2d83e1ac0001a6ef9ea235635e328124ff3429db9f9e91b64e2d809b2ac9141f9090aae28b8a3dceadf281b0f12828e676c32667460c2f56774ed27eeb8685f29f6cec0b090b000000000000000000000000000000000000000000a0c1874f0000000002160214002d3311c38bfd219092d2aef449804be8b3befe160214002d3311c38bfd219092d2aef449804be8b3befeffece948b8a38bbcc813411d2597f7f8485a0689750000000058b501000000000000000000000000',
+    intent: {
+      currency: system, satoshis: '10000000', exportto: ethGateway,
+      address: TransferDestination.fromJson({ type: DEST_ETH.toNumber(), address: '0x1f9090aae28b8a3dceadf281b0f12828e676c326' }),
+      refundto: pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx')
+    },
+    context: {
+      currencyDefinitions: definitions,
+      route: { importCurrency: ethBridge, system, gateway: { system: ethGateway, code: zeroCode } },
+      fees: { currency: system, transferSatoshis: '20010', destinationSatoshis: '1334296992' },
+      auxiliaryDestinations: [pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx'), pkh('R9J8E2no2HVjQmzX6Ntes2ShSGcn7WiRcx')]
+    }
+  };
+
+  function validate(fixture: Fixture, hex = fixture.hex) {
+    return validateCurrencyTransferIntent(fixture.system, hex, fixture.intent, networks.verustest, fixture.context);
+  }
+
+  for (const fixture of [toFractional, toReserve, via, preconvert, direct, gateway, eth]) {
+    it(`accepts ${fixture.name} against independently specified intent`, function () {
+      assert.deepStrictEqual(validate(fixture), { valid: true });
+    });
+  }
+
+  for (const fixture of [toFractional, toReserve, preconvert]) {
+    it(`accepts ${fixture.name} when exportto names the current chain`, function () {
+      assert.deepStrictEqual(validate({ ...fixture, intent: { ...fixture.intent, exportto: fixture.system } }), { valid: true });
+    });
+  }
+
+  it('rejects CROSS_SYSTEM on a conversion with exportto naming the current chain', function () {
+    const hex = rewrite(toFractional.hex, t => {
+      t.flags = t.flags.or(RESERVE_TRANSFER_CROSS_SYSTEM);
+      t.destSystemID = system;
+    });
+    assert.deepStrictEqual(validate({ ...toFractional, hex, intent: { ...toFractional.intent, exportto: system } }),
+      { valid: false, message: 'Export system does not match approved route.' });
+  });
+
+  it('rejects a gateway export when exportto names the current chain', function () {
+    assert.deepStrictEqual(validate({ ...gateway, intent: { ...gateway.intent, exportto: gateway.system } }),
+      { valid: false, message: 'A non-converting reserve transfer requires an export route.' });
+    const selfGateway = {
+      ...toFractional, intent: { ...toFractional.intent, exportto: system },
+      context: { ...toFractional.context, route: { ...toFractional.context.route, gateway: { system, code: zeroCode } } }
+    };
+    assert.deepStrictEqual(validate(selfGateway),
+      { valid: false, message: 'Approved export route does not match intent.' });
+  });
+
+  it('rejects a remote preconverter when exportto names the current chain', function () {
+    const currencyDefinitions = { ...definitions, [prelaunch]: { ...definitions[prelaunch], systemid: remote } };
+    assert.deepStrictEqual(validate({
+      ...preconvert, intent: { ...preconvert.intent, exportto: system },
+      context: { ...preconvert.context, currencyDefinitions }
+    }), { valid: false, message: 'Approved import currency is on a different system.' });
+  });
+
+  it('keeps non-converting local reserve transfers unsupported when exportto names the current chain', function () {
+    assert.deepStrictEqual(validate({ ...local, intent: { ...local.intent, exportto: system } }),
+      { valid: false, message: 'A non-converting reserve transfer requires an export route.' });
+  });
+
+  it('accepts an explicit fee converter without setting CONVERT or RESERVE_TO_RESERVE', function () {
+    assert.deepStrictEqual(validate({ ...gateway, intent: { ...gateway.intent, via: bridge } }), { valid: true });
+  });
+
+  it('accepts principal conversion through a local converter before ETH gateway export', function () {
+    const hex = rewrite(eth.hex, t => {
+      t.flags = t.flags.or(RESERVE_TRANSFER_CONVERT).or(RESERVE_TRANSFER_RESERVE_TO_RESERVE);
+      t.secondReserveID = ethGateway;
+    });
+    assert.deepStrictEqual(validate({ ...eth, hex, intent: { ...eth.intent, convertto: ethGateway, via: ethBridge } }), { valid: true });
+  });
+
+  it('accepts direct export to a nonfractional importer with destination-system fees', function () {
+    const hex = rewrite(direct.hex, t => { t.destCurrencyID = remote; t.feeCurrencyID = remote; });
+    const tx = Transaction.fromHex(hex, networks.verustest);
+    tx.outs[0].value = 25000000000;
+    const fixture = {
+      ...direct, hex: tx.toHex(), intent: { ...direct.intent, feecurrency: remote },
+      context: { ...direct.context, route: { importCurrency: remote, system: remote }, fees: { ...direct.context.fees, currency: remote } }
+    };
+    assert.deepStrictEqual(validate(fixture), { valid: true });
+  });
+
+  it('accepts requested fees equal to the approved sum of both fee legs', function () {
+    assert.deepStrictEqual(validate({ ...gateway, intent: { ...gateway.intent, feesatoshis: '29102677' } }), { valid: true });
+  });
+
+  it('rejects approved allocations whose total differs from requested fees', function () {
+    assert.deepStrictEqual(validate({ ...gateway, intent: { ...gateway.intent, feesatoshis: '29102676' } }), { valid: false, message: 'Approved fee allocation does not match requested fee.' });
+  });
+
+  it('rejects a local ETH recipient even when candidate and intent addresses match', function () {
+    const hex = rewrite(toFractional.hex, t => { t.transferDestination = eth.intent.address; });
+    assert.deepStrictEqual(validate({ ...toFractional, hex, intent: { ...toFractional.intent, address: eth.intent.address } }), { valid: false, message: 'ETH recipient requires an external gateway export.' });
+  });
+
+  it('rejects fee or principal-plus-fee totals beyond signed 64-bit amounts', function () {
+    const fees = { ...gateway.context.fees, transferSatoshis: '9223372036854775807', destinationSatoshis: '1' };
+    const failure = { valid: false, message: 'Principal and fees exceed the supported amount range.' };
+    assert.deepStrictEqual(validate({ ...gateway, context: { ...gateway.context, fees } }), failure);
+    assert.deepStrictEqual(validate({ ...toFractional, intent: { ...toFractional.intent, satoshis: '9223372036854775807' } }), failure);
+  });
+
+  it('fails closed for a non-exporting reserve transfer outside the supported daemon paths', function () {
+    assert.deepStrictEqual(validate(local), { valid: false, message: 'A non-converting reserve transfer requires an export route.' });
+  });
+
+  const mutations: Array<[string, Fixture, (transfer: ReserveTransfer) => void, string]> = [
+    ['conversion target', toFractional, t => { t.destCurrencyID = reserve; }, 'Conversion target does not match intent.'],
+    ['final reserve through via', via, t => { t.secondReserveID = fractional; }, 'Conversion target does not match intent.'],
+    ['via converter', via, t => { t.destCurrencyID = fractional; }, 'Via converter does not match intent.'],
+    ['missing CONVERT', toFractional, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_CONVERT); }, 'Conversion flags do not match intent.'],
+    ['unexpected CONVERT', gateway, t => { t.flags = t.flags.or(RESERVE_TRANSFER_CONVERT); }, 'Conversion flags do not match intent.'],
+    ['missing RESERVE_TO_RESERVE', via, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_RESERVE_TO_RESERVE); }, 'Conversion flags do not match intent.'],
+    ['unexpected PRECONVERT', toFractional, t => { t.flags = t.flags.or(RESERVE_TRANSFER_PRECONVERT); }, 'Conversion flags do not match intent.'],
+    ['missing PRECONVERT', preconvert, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_PRECONVERT); }, 'Conversion flags do not match intent.'],
+    ['missing IMPORT_TO_SOURCE', toReserve, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_IMPORT_TO_SOURCE); }, 'IMPORT_TO_SOURCE does not match the conversion relationship.'],
+    ['unexpected IMPORT_TO_SOURCE', toFractional, t => { t.flags = t.flags.or(RESERVE_TRANSFER_IMPORT_TO_SOURCE); }, 'IMPORT_TO_SOURCE does not match the conversion relationship.'],
+    ['export system', direct, t => { t.destSystemID = reserve; }, 'Export system does not match approved route.'],
+    ['missing CROSS_SYSTEM', direct, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_CROSS_SYSTEM); }, 'Export system does not match approved route.'],
+    ['unexpected CROSS_SYSTEM on the local gateway leg', gateway, t => { t.flags = t.flags.or(RESERVE_TRANSFER_CROSS_SYSTEM); t.destSystemID = system; }, 'Export system does not match approved route.'],
+    ['gateway system', gateway, t => { t.transferDestination.gatewayID = reserve; }, 'Gateway route does not match approved route.'],
+    ['gateway code', gateway, t => { t.transferDestination.gatewayCode = reserve; }, 'Gateway route does not match approved route.'],
+    ['missing gateway leg', gateway, t => { t.transferDestination.type = t.transferDestination.type.xor(FLAG_DEST_GATEWAY); }, 'Gateway route does not match approved route.'],
+    ['source currency', toFractional, t => { t.reserveValues.valueMap = new Map([[reserve, new BigNumber('1000000000')]]); }, 'Source currency does not match intent.'],
+    ['principal', toFractional, t => { t.reserveValues.valueMap.set(system, new BigNumber('1000000001')); }, 'Principal amount does not match intent.'],
+    ['immediate fee', gateway, t => { t.feeAmount = t.feeAmount.addn(1); }, 'Immediate transfer fee does not match approved allocation.'],
+    ['destination fee', gateway, t => { t.transferDestination.fees = t.transferDestination.fees.addn(1); }, 'Destination fee does not match approved allocation.'],
+    ['fee currency', gateway, t => { t.feeCurrencyID = system; }, 'Fee currency does not match intent.'],
+    ['recipient', toFractional, t => { t.transferDestination.destinationBytes = fromBase58Check('RP4Qct9197i5vrS11qHVtdyRRoAHVNJS47').hash; }, 'Recipient does not match intent.'],
+    ['refund recipient', gateway, t => { t.transferDestination.auxDests[0] = pkh('RP4Qct9197i5vrS11qHVtdyRRoAHVNJS47'); }, 'Auxiliary destinations do not match approved refund policy.'],
+    ['additional auxiliary destination', gateway, t => { t.transferDestination.auxDests.push(pkh('RP4Qct9197i5vrS11qHVtdyRRoAHVNJS47')); }, 'Auxiliary destinations do not match approved refund policy.'],
+    ['missing auxiliary destination', gateway, t => { t.transferDestination.type = t.transferDestination.type.xor(FLAG_DEST_AUX); }, 'Auxiliary destinations do not match approved refund policy.']
+  ];
+  for (const [name, fixture, edit, message] of mutations) {
+    it(`rejects changed ${name} in a structurally serialized transfer`, function () {
+      assert.deepStrictEqual(validate(fixture, rewrite(fixture.hex, edit)), { valid: false, message });
+    });
+  }
+
+  for (const [name, flag] of [['fee output', 8], ['double send', 16], ['mint', 32], ['burn', 128], ['burn weight', 256], ['refund', 2048], ['identity export', 4096], ['currency export', 8192], ['arbitrage', 16384], ['unknown operation', 32768]] as Array<[string, number]>) {
+    it(`rejects unauthorized ${name}`, function () {
+      const hex = rewrite(toFractional.hex, t => { t.flags = t.flags.or(new BigNumber(flag)); });
+      assert.deepStrictEqual(validate(toFractional, hex), { valid: false, message: 'Unauthorized reserve transfer flags.' });
+    });
+  }
+
+  it('rejects output value that does not fund both approved fee legs', function () {
+    const tx = Transaction.fromHex(gateway.hex, networks.verustest);
+    tx.outs[0].value--;
+    assert.deepStrictEqual(validate(gateway, tx.toHex()), { valid: false, message: 'Native output value does not match principal and fees.' });
+  });
+
+  it('rejects a fee split change even when total fees and native value are unchanged', function () {
+    const hex = rewrite(gateway.hex, t => { t.feeAmount = t.feeAmount.addn(1); t.transferDestination.fees = t.transferDestination.fees.subn(1); });
+    assert.deepStrictEqual(validate(gateway, hex), { valid: false, message: 'Immediate transfer fee does not match approved allocation.' });
+  });
+
+  it('rejects extra outputs and funded candidates', function () {
+    const tx = Transaction.fromHex(toFractional.hex, networks.verustest);
+    tx.addOutput(tx.outs[0].script, tx.outs[0].value);
+    assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Expected exactly one unfunded reserve-transfer output.' });
+    tx.outs.pop();
+    tx.addInput(Buffer.alloc(32, 1), 0);
+    assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Expected exactly one unfunded reserve-transfer output.' });
+  });
+
+  it('rejects malformed transaction hex', function () {
+    assert.deepStrictEqual(validate(toFractional, '04000080zz'), { valid: false, message: 'Malformed transaction or reserve-transfer output.' });
+  });
+
+  it('requires an overwintered version 4 transaction', function () {
+    const tx = Transaction.fromHex(toFractional.hex, networks.verustest);
+    tx.overwintered = 0;
+    assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Expected exactly one unfunded reserve-transfer output.' });
+  });
+
+  it('rejects a non-reserve output and trailing reserve-transfer data', function () {
+    const tx = Transaction.fromHex(toFractional.hex, networks.verustest);
+    const original = tx.outs[0].script;
+    tx.outs[0].script = require('../src/address').toOutputScript('R9hJiQ8Evh2ehU68GveFfXGDwdRcPKSbip', networks.verustest);
+    assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Malformed transaction or reserve-transfer output.' });
+    const chunks = decompile(original) as [Buffer, number, Buffer, number];
+    const params = OptCCParams.fromChunk(chunks[2]);
+    params.vData[0] = Buffer.concat([params.vData[0], Buffer.from([0])]);
+    chunks[2] = params.toChunk();
+    tx.outs[0].script = compile(chunks);
+    assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Malformed transaction or reserve-transfer output.' });
+  });
+
+  for (const condition of ['threshold', 'key']) {
+    it(`rejects a changed reserve-transfer condition ${condition}`, function () {
+      const tx = Transaction.fromHex(toFractional.hex, networks.verustest);
+      const chunks = decompile(tx.outs[0].script) as [Buffer, number, Buffer, number];
+      const params = require('../src/optccparams').fromChunk(chunks[2]);
+      if (condition === 'threshold') params.m = 0;
+      else params.destinations[0].destinationBytes = Buffer.alloc(20, 1);
+      chunks[2] = params.toChunk();
+      tx.outs[0].script = compile(chunks);
+      assert.deepStrictEqual(validate(toFractional, tx.toHex()), { valid: false, message: 'Malformed transaction or reserve-transfer output.' });
+    });
+  }
+
+  it('requires independently supplied definitions, fees and refund context', function () {
+    assert.deepStrictEqual(validate({ ...toFractional, context: undefined }), { valid: false, message: 'Missing approved routing, currency, fee or refund context.' });
+    assert.deepStrictEqual(validate({ ...toFractional, context: { ...toFractional.context, currencyDefinitions: {} } }), { valid: false, message: `Missing currency definition for ${system}.` });
+    assert.deepStrictEqual(validate({ ...gateway, context: { ...gateway.context, fees: { ...gateway.context.fees, destinationSatoshis: undefined } } }), { valid: false, message: 'Destination fee must be an integer satoshi string.' });
+    assert.deepStrictEqual(validate({ ...gateway, context: { ...gateway.context, auxiliaryDestinations: [] } }), { valid: false, message: 'Approved refund policy does not match refundto.' });
+  });
+
+  it('uses the requested preconvert intent even if the consumer omitted it from the RPC call', function () {
+    const hex = rewrite(preconvert.hex, t => { t.flags = t.flags.xor(RESERVE_TRANSFER_PRECONVERT); });
+    assert.deepStrictEqual(validate(preconvert, hex), { valid: false, message: 'Conversion flags do not match intent.' });
+  });
+
+  it('rejects an approved fee currency unrelated to the converter', function () {
+    const fixture = {
+      ...toFractional,
+      intent: { ...toFractional.intent, feecurrency: remote },
+      context: { ...toFractional.context, fees: { ...toFractional.context.fees, currency: remote } }
+    };
+    assert.deepStrictEqual(validate(fixture), { valid: false, message: 'Fee currency is not supported by the approved converter.' });
+  });
+
+  it('compares reserve principal amounts beyond Number precision exactly', function () {
+    const satoshis = '9007199254740993';
+    const fixture = { ...toReserve, intent: { ...toReserve.intent, satoshis } };
+    const hex = rewrite(toReserve.hex, t => { t.reserveValues.valueMap.set(fractional, new BigNumber(satoshis)); });
+    assert.deepStrictEqual(validate(fixture, hex), { valid: true });
+    assert.deepStrictEqual(validate({ ...fixture, intent: { ...fixture.intent, satoshis: '9007199254740992' } }, hex), { valid: false, message: 'Principal amount does not match intent.' });
+    assert.deepStrictEqual(validate({ ...fixture, intent: { ...fixture.intent, satoshis: '9e15' } }, hex), { valid: false, message: 'Principal must be an integer satoshi string.' });
+  });
+
+  it('rejects a substituted conversion even though trusted-template funding validation accepts it', function () {
+    const substituted = rewrite(toFractional.hex, t => { t.destCurrencyID = bridge; });
+    const tx = Transaction.fromHex(substituted, networks.verustest);
+    const changeAddress = 'RTqQe58LSj2yr5CrwYFwcsAQ1edQwmrkUU';
+    const changeScript = require('../src/address').toOutputScript(changeAddress, networks.verustest);
+    const utxo = { txid: 'ab'.repeat(32), outputIndex: 0, satoshis: 2000000000, script: changeScript.toString('hex'), isspendable: true, address: changeAddress, height: 1 };
+    tx.addInput(Buffer.from(utxo.txid, 'hex').reverse(), 0);
+    tx.addOutput(changeScript, utxo.satoshis - tx.outs[0].value - 10000);
+    const funding = validateFundedCurrencyTransfer(system, tx.toHex(), substituted, changeAddress, networks.verustest, [utxo]);
+
+    assert.strictEqual(funding.valid, true);
+    assert.deepStrictEqual(funding.sent, { [system]: '1000000000' });
+    assert.deepStrictEqual(validate(toFractional, substituted), { valid: false, message: 'Conversion target does not match intent.' });
+  });
+});
 
 describe('smarttxs', function () {
   it('creates basic PKH tx when able', function () {

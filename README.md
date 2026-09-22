@@ -28,6 +28,8 @@ Originally a fork of [bitcoinjs-lib](https://github.com/BitGo/bitcoinjs-lib); we
 - Multicoin support: Configurable behaviour based on [network](https://github.com/BitGo/bitgo-utxo-lib/blob/master/src/networks.js) objects.
 - Backed by [BitGo](https://www.bitgo.com/info/)
 
+For RPC-created Verus conversions and exports, see [currency transfer intent validation](doc/currency-transfer-intent.md).
+
 ## Installation
 ``` bash
 npm install @bitgo/utxo-lib
