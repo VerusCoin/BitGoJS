@@ -718,12 +718,19 @@ const createUnfundedCurrencyTransfer = (systemId, outputs, network, expiryHeight
     return txb.buildIncomplete().toHex();
 };
 exports.createUnfundedCurrencyTransfer = createUnfundedCurrencyTransfer;
-const createUnfundedIdentityUpdate = (identityHex, network, expiryHeight = 0, version = 4, versionGroupId = 0x892f2085) => {
+/** rootSystemName supplies explicit chain context for an identity with a null parent. */
+const createUnfundedIdentityUpdate = (identityHex, network, expiryHeight = 0, version = 4, versionGroupId = 0x892f2085, rootSystemName) => {
     const txb = new TransactionBuilder(network);
     txb.setVersion(version);
     txb.setExpiryHeight(expiryHeight);
     txb.setVersionGroupId(versionGroupId);
-    const identity = new verus_typescript_primitives_1.Identity();
+    // IdentityScript.fromIdentity derives the address without forwarding root context.
+    class IdentityWithRootContext extends verus_typescript_primitives_1.Identity {
+        getIdentityAddress(root = rootSystemName) {
+            return super.getIdentityAddress(root);
+        }
+    }
+    const identity = new IdentityWithRootContext();
     identity.fromBuffer(Buffer.from(identityHex, 'hex'));
     const outputScript = verus_typescript_primitives_1.IdentityScript.fromIdentity(identity).toBuffer();
     txb.addOutput(outputScript, 0);

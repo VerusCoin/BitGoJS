@@ -921,12 +921,14 @@ export const createUnfundedCurrencyTransfer = (
   return txb.buildIncomplete().toHex();
 }
 
+/** rootSystemName supplies explicit chain context for an identity with a null parent. */
 export const createUnfundedIdentityUpdate = (
   identityHex: string,
   network: Network,
   expiryHeight: number = 0,
   version: number = 4,
-  versionGroupId: number = 0x892f2085
+  versionGroupId: number = 0x892f2085,
+  rootSystemName?: string
 ): string => {
   const txb = new TransactionBuilder(network);
 
@@ -934,7 +936,13 @@ export const createUnfundedIdentityUpdate = (
   txb.setExpiryHeight(expiryHeight);
   txb.setVersionGroupId(versionGroupId);
 
-  const identity = new Identity();
+  // IdentityScript.fromIdentity derives the address without forwarding root context.
+  class IdentityWithRootContext extends Identity {
+    getIdentityAddress(root: string = rootSystemName): string {
+      return super.getIdentityAddress(root);
+    }
+  }
+  const identity = new IdentityWithRootContext();
   identity.fromBuffer(Buffer.from(identityHex, 'hex'));
 
   const outputScript = IdentityScript.fromIdentity(identity).toBuffer();
