@@ -10,6 +10,7 @@ const script = require('./script.js');
 const opcodes = require('bitcoin-ops');
 const OptCCParams = require('./optccparams');
 const templates = require('./templates');
+const VDXF_TAG_ADDRESS_VERSION = 137;
 // Hack to force BigNumber to get typeof class instead of BN namespace
 const BNClass = new bn_js_1.BN(0);
 /**
@@ -40,7 +41,8 @@ const validateCurrencyTransferIntent = (systemId, unfundedTxHex, intent, network
     try {
         check(!!intent && !!context && !!context.route && !!context.fees &&
             !!context.currencyDefinitions && Array.isArray(context.auxiliaryDestinations), 'Missing approved routing, currency, fee or refund context.');
-        check(!intent.burn && !intent.burnweight && !intent.mintnew && intent.mapto == null && intent.vdxftag == null, 'Unsupported requested operation.');
+        check(!intent.burn && !intent.burnweight && !intent.mintnew && intent.mapto == null, 'Unsupported requested operation.');
+        const tagHash = intent.vdxftag == null ? null : (0, verus_typescript_primitives_1.decodeDestination)(intent.vdxftag, VDXF_TAG_ADDRESS_VERSION);
         check(plainDestination(intent.address), 'Intent recipient must be a plain PKH, ID or ETH destination.');
         check(context.auxiliaryDestinations.every(plainDestination), 'Unsupported auxiliary destination policy.');
         if (intent.refundto != null) {
@@ -158,9 +160,10 @@ const validateCurrencyTransferIntent = (systemId, unfundedTxHex, intent, network
             const master = OptCCParams.fromChunk(chunks[0]);
             const params = OptCCParams.fromChunk(chunks[2]);
             for (const cc of [master, params]) {
+                const taggedMaster = cc === master && tagHash != null;
                 check(cc.version === 3 && cc.m === 1 && cc.n === 1 && cc.destinations.length === 1 &&
-                    cc.destinations[0].destType === TxDestination.TYPE_PKH &&
-                    cc.destinations[0].destinationBytes.equals(verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destinationBytes), 'Invalid condition');
+                    cc.destinations[0].destType === (taggedMaster ? TxDestination.TYPE_INDEX : TxDestination.TYPE_PKH) &&
+                    cc.destinations[0].destinationBytes.equals(taggedMaster ? tagHash : verus_typescript_primitives_1.RESERVE_TRANSFER_DESTINATION.destinationBytes), 'Invalid condition');
             }
             check(master.evalCode === verus_typescript_primitives_1.EVALS.EVAL_NONE && master.vData.length === 0 &&
                 params.evalCode === verus_typescript_primitives_1.EVALS.EVAL_RESERVE_TRANSFER && params.vData.length === 1 &&
@@ -606,9 +609,7 @@ const createUnfundedCurrencyTransfer = (systemId, outputs, network, expiryHeight
             throw new Error("Must specify satoshis for all outputs");
         if (output.address == null)
             throw new Error("Must specify address for all outputs");
-        //TODO: Implement VDXF tags by adding destination to master optccparams
-        if (output.vdxftag != null)
-            throw new Error("VDXF tags not fully implemented");
+        const tagDestination = output.vdxftag == null ? null : new TxDestination(TxDestination.TYPE_INDEX, (0, verus_typescript_primitives_1.decodeDestination)(output.vdxftag, VDXF_TAG_ADDRESS_VERSION));
         const params = {
             currency: output.currency,
             satoshis: output.satoshis,
@@ -639,7 +640,7 @@ const createUnfundedCurrencyTransfer = (systemId, outputs, network, expiryHeight
         });
         const nativeFeeValue = params.feecurrency === systemId && isReserveTransfer ? new bn_js_1.BN(params.feesatoshis) : new bn_js_1.BN(0);
         const nativeValue = params.currency === systemId ? satoshis.add(nativeFeeValue) : nativeFeeValue;
-        const isPKH = !isReserveTransfer && !output.vdxftag && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
+        const isPKH = !isReserveTransfer && tagDestination == null && params.currency === systemId && params.address.type.eq(verus_typescript_primitives_1.DEST_PKH);
         if (isPKH) {
             txb.addOutput(params.address.getAddressString(), nativeValue.toNumber());
         }
@@ -705,6 +706,9 @@ const createUnfundedCurrencyTransfer = (systemId, outputs, network, expiryHeight
                     });
                     outParams = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_RESERVE_OUTPUT, 1, 1, [destination], [tokenOutput.toBuffer()]);
                 }
+            }
+            if (tagDestination != null) {
+                outMaster = new OptCCParams(3, verus_typescript_primitives_1.EVALS.EVAL_NONE, 1, 1, [tagDestination]);
             }
             const outputScript = script.compile([
                 outMaster.toChunk(),
